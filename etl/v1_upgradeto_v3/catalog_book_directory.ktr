@@ -1,0 +1,641 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<transformation>
+  <info>
+    <name>CATALOG_BOOK_DIRECTORY</name>
+    <description/>
+    <extended_description/>
+    <trans_version/>
+    <trans_type>Normal</trans_type>
+    <directory>&#x2f;</directory>
+    <parameters>
+    </parameters>
+    <log>
+<trans-log-table><connection/>
+<schema/>
+<table/>
+<size_limit_lines/>
+<interval/>
+<timeout_days/>
+<field><id>ID_BATCH</id><enabled>Y</enabled><name>ID_BATCH</name></field><field><id>CHANNEL_ID</id><enabled>Y</enabled><name>CHANNEL_ID</name></field><field><id>TRANSNAME</id><enabled>Y</enabled><name>TRANSNAME</name></field><field><id>STATUS</id><enabled>Y</enabled><name>STATUS</name></field><field><id>LINES_READ</id><enabled>Y</enabled><name>LINES_READ</name><subject/></field><field><id>LINES_WRITTEN</id><enabled>Y</enabled><name>LINES_WRITTEN</name><subject/></field><field><id>LINES_UPDATED</id><enabled>Y</enabled><name>LINES_UPDATED</name><subject/></field><field><id>LINES_INPUT</id><enabled>Y</enabled><name>LINES_INPUT</name><subject/></field><field><id>LINES_OUTPUT</id><enabled>Y</enabled><name>LINES_OUTPUT</name><subject/></field><field><id>LINES_REJECTED</id><enabled>Y</enabled><name>LINES_REJECTED</name><subject/></field><field><id>ERRORS</id><enabled>Y</enabled><name>ERRORS</name></field><field><id>STARTDATE</id><enabled>Y</enabled><name>STARTDATE</name></field><field><id>ENDDATE</id><enabled>Y</enabled><name>ENDDATE</name></field><field><id>LOGDATE</id><enabled>Y</enabled><name>LOGDATE</name></field><field><id>DEPDATE</id><enabled>Y</enabled><name>DEPDATE</name></field><field><id>REPLAYDATE</id><enabled>Y</enabled><name>REPLAYDATE</name></field><field><id>LOG_FIELD</id><enabled>Y</enabled><name>LOG_FIELD</name></field><field><id>EXECUTING_SERVER</id><enabled>N</enabled><name>EXECUTING_SERVER</name></field><field><id>EXECUTING_USER</id><enabled>N</enabled><name>EXECUTING_USER</name></field><field><id>CLIENT</id><enabled>N</enabled><name>CLIENT</name></field></trans-log-table>
+<perf-log-table><connection/>
+<schema/>
+<table/>
+<interval/>
+<timeout_days/>
+<field><id>ID_BATCH</id><enabled>Y</enabled><name>ID_BATCH</name></field><field><id>SEQ_NR</id><enabled>Y</enabled><name>SEQ_NR</name></field><field><id>LOGDATE</id><enabled>Y</enabled><name>LOGDATE</name></field><field><id>TRANSNAME</id><enabled>Y</enabled><name>TRANSNAME</name></field><field><id>STEPNAME</id><enabled>Y</enabled><name>STEPNAME</name></field><field><id>STEP_COPY</id><enabled>Y</enabled><name>STEP_COPY</name></field><field><id>LINES_READ</id><enabled>Y</enabled><name>LINES_READ</name></field><field><id>LINES_WRITTEN</id><enabled>Y</enabled><name>LINES_WRITTEN</name></field><field><id>LINES_UPDATED</id><enabled>Y</enabled><name>LINES_UPDATED</name></field><field><id>LINES_INPUT</id><enabled>Y</enabled><name>LINES_INPUT</name></field><field><id>LINES_OUTPUT</id><enabled>Y</enabled><name>LINES_OUTPUT</name></field><field><id>LINES_REJECTED</id><enabled>Y</enabled><name>LINES_REJECTED</name></field><field><id>ERRORS</id><enabled>Y</enabled><name>ERRORS</name></field><field><id>INPUT_BUFFER_ROWS</id><enabled>Y</enabled><name>INPUT_BUFFER_ROWS</name></field><field><id>OUTPUT_BUFFER_ROWS</id><enabled>Y</enabled><name>OUTPUT_BUFFER_ROWS</name></field></perf-log-table>
+<channel-log-table><connection/>
+<schema/>
+<table/>
+<timeout_days/>
+<field><id>ID_BATCH</id><enabled>Y</enabled><name>ID_BATCH</name></field><field><id>CHANNEL_ID</id><enabled>Y</enabled><name>CHANNEL_ID</name></field><field><id>LOG_DATE</id><enabled>Y</enabled><name>LOG_DATE</name></field><field><id>LOGGING_OBJECT_TYPE</id><enabled>Y</enabled><name>LOGGING_OBJECT_TYPE</name></field><field><id>OBJECT_NAME</id><enabled>Y</enabled><name>OBJECT_NAME</name></field><field><id>OBJECT_COPY</id><enabled>Y</enabled><name>OBJECT_COPY</name></field><field><id>REPOSITORY_DIRECTORY</id><enabled>Y</enabled><name>REPOSITORY_DIRECTORY</name></field><field><id>FILENAME</id><enabled>Y</enabled><name>FILENAME</name></field><field><id>OBJECT_ID</id><enabled>Y</enabled><name>OBJECT_ID</name></field><field><id>OBJECT_REVISION</id><enabled>Y</enabled><name>OBJECT_REVISION</name></field><field><id>PARENT_CHANNEL_ID</id><enabled>Y</enabled><name>PARENT_CHANNEL_ID</name></field><field><id>ROOT_CHANNEL_ID</id><enabled>Y</enabled><name>ROOT_CHANNEL_ID</name></field></channel-log-table>
+<step-log-table><connection/>
+<schema/>
+<table/>
+<timeout_days/>
+<field><id>ID_BATCH</id><enabled>Y</enabled><name>ID_BATCH</name></field><field><id>CHANNEL_ID</id><enabled>Y</enabled><name>CHANNEL_ID</name></field><field><id>LOG_DATE</id><enabled>Y</enabled><name>LOG_DATE</name></field><field><id>TRANSNAME</id><enabled>Y</enabled><name>TRANSNAME</name></field><field><id>STEPNAME</id><enabled>Y</enabled><name>STEPNAME</name></field><field><id>STEP_COPY</id><enabled>Y</enabled><name>STEP_COPY</name></field><field><id>LINES_READ</id><enabled>Y</enabled><name>LINES_READ</name></field><field><id>LINES_WRITTEN</id><enabled>Y</enabled><name>LINES_WRITTEN</name></field><field><id>LINES_UPDATED</id><enabled>Y</enabled><name>LINES_UPDATED</name></field><field><id>LINES_INPUT</id><enabled>Y</enabled><name>LINES_INPUT</name></field><field><id>LINES_OUTPUT</id><enabled>Y</enabled><name>LINES_OUTPUT</name></field><field><id>LINES_REJECTED</id><enabled>Y</enabled><name>LINES_REJECTED</name></field><field><id>ERRORS</id><enabled>Y</enabled><name>ERRORS</name></field><field><id>LOG_FIELD</id><enabled>N</enabled><name>LOG_FIELD</name></field></step-log-table>
+<metrics-log-table><connection/>
+<schema/>
+<table/>
+<timeout_days/>
+<field><id>ID_BATCH</id><enabled>Y</enabled><name>ID_BATCH</name></field><field><id>CHANNEL_ID</id><enabled>Y</enabled><name>CHANNEL_ID</name></field><field><id>LOG_DATE</id><enabled>Y</enabled><name>LOG_DATE</name></field><field><id>METRICS_DATE</id><enabled>Y</enabled><name>METRICS_DATE</name></field><field><id>METRICS_CODE</id><enabled>Y</enabled><name>METRICS_CODE</name></field><field><id>METRICS_DESCRIPTION</id><enabled>Y</enabled><name>METRICS_DESCRIPTION</name></field><field><id>METRICS_SUBJECT</id><enabled>Y</enabled><name>METRICS_SUBJECT</name></field><field><id>METRICS_TYPE</id><enabled>Y</enabled><name>METRICS_TYPE</name></field><field><id>METRICS_VALUE</id><enabled>Y</enabled><name>METRICS_VALUE</name></field></metrics-log-table>
+    </log>
+    <maxdate>
+      <connection/>
+      <table/>
+      <field/>
+      <offset>0.0</offset>
+      <maxdiff>0.0</maxdiff>
+    </maxdate>
+    <size_rowset>10000</size_rowset>
+    <sleep_time_empty>50</sleep_time_empty>
+    <sleep_time_full>50</sleep_time_full>
+    <unique_connections>N</unique_connections>
+    <feedback_shown>Y</feedback_shown>
+    <feedback_size>50000</feedback_size>
+    <using_thread_priorities>Y</using_thread_priorities>
+    <shared_objects_file/>
+    <capture_step_performance>N</capture_step_performance>
+    <step_performance_capturing_delay>1000</step_performance_capturing_delay>
+    <step_performance_capturing_size_limit>100</step_performance_capturing_size_limit>
+    <dependencies>
+    </dependencies>
+    <partitionschemas>
+    </partitionschemas>
+    <slaveservers>
+    </slaveservers>
+    <clusterschemas>
+    </clusterschemas>
+  <created_user>-</created_user>
+  <created_date>2017&#x2f;01&#x2f;05 14&#x3a;24&#x3a;43.662</created_date>
+  <modified_user>-</modified_user>
+  <modified_date>2017&#x2f;01&#x2f;05 14&#x3a;24&#x3a;43.662</modified_date>
+    <key_for_session_key>H4sIAAAAAAAAAAMAAAAAAAAAAAA&#x3d;</key_for_session_key>
+    <is_key_private>N</is_key_private>
+  </info>
+  <notepads>
+  </notepads>
+  <connection>
+    <name>&#x5355;&#x9986;&#x6570;&#x636e;&#x5e93;&#x8fde;&#x63a5;</name>
+    <server>&#x24;&#x7b;DB_DG_HOST&#x7d;</server>
+    <type>ORACLE</type>
+    <access>Native</access>
+    <database>&#x24;&#x7b;DB_DG_SID&#x7d;</database>
+    <port>&#x24;&#x7b;DB_DG_PORT&#x7d;</port>
+    <username>&#x24;&#x7b;DB_DG_USER&#x7d;</username>
+    <password>&#x24;&#x7b;DB_DG_PWD&#x7d;</password>
+    <servername/>
+    <data_tablespace/>
+    <index_tablespace/>
+    <attributes>
+      <attribute><code>FORCE_IDENTIFIERS_TO_LOWERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>FORCE_IDENTIFIERS_TO_UPPERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>IS_CLUSTERED</code><attribute>N</attribute></attribute>
+      <attribute><code>PORT_NUMBER</code><attribute>&#x24;&#x7b;DB_DG_PORT&#x7d;</attribute></attribute>
+      <attribute><code>PRESERVE_RESERVED_WORD_CASE</code><attribute>Y</attribute></attribute>
+      <attribute><code>QUOTE_ALL_FIELDS</code><attribute>N</attribute></attribute>
+      <attribute><code>SUPPORTS_BOOLEAN_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>SUPPORTS_TIMESTAMP_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>USE_POOLING</code><attribute>N</attribute></attribute>
+    </attributes>
+  </connection>
+  <connection>
+    <name>&#x56fe;&#x4e66;v1.0&#x6570;&#x636e;&#x5e93;&#x8fde;&#x63a5;</name>
+    <server>&#x24;&#x7b;DB_V1_HOST&#x7d;</server>
+    <type>ORACLE</type>
+    <access>Native</access>
+    <database>&#x24;&#x7b;DB_V1_SID&#x7d;</database>
+    <port>1521</port>
+    <username>&#x24;&#x7b;DB_V1_USER&#x7d;</username>
+    <password>&#x24;&#x7b;DB_V1_PWD&#x7d;</password>
+    <servername/>
+    <data_tablespace/>
+    <index_tablespace/>
+    <attributes>
+      <attribute><code>FORCE_IDENTIFIERS_TO_LOWERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>FORCE_IDENTIFIERS_TO_UPPERCASE</code><attribute>N</attribute></attribute>
+      <attribute><code>IS_CLUSTERED</code><attribute>N</attribute></attribute>
+      <attribute><code>PORT_NUMBER</code><attribute>1521</attribute></attribute>
+      <attribute><code>PRESERVE_RESERVED_WORD_CASE</code><attribute>Y</attribute></attribute>
+      <attribute><code>QUOTE_ALL_FIELDS</code><attribute>N</attribute></attribute>
+      <attribute><code>SUPPORTS_BOOLEAN_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>SUPPORTS_TIMESTAMP_DATA_TYPE</code><attribute>Y</attribute></attribute>
+      <attribute><code>USE_POOLING</code><attribute>N</attribute></attribute>
+    </attributes>
+  </connection>
+  <order>
+  <hop> <from>&#x5b57;&#x6bb5;&#x9009;&#x62e9;</from><to>&#x63d2;&#x5165; &#x2f; &#x66f4;&#x65b0;</to><enabled>Y</enabled> </hop>
+  <hop> <from>&#x62c6;&#x5206;&#x79cd;&#x6b21;&#x53f7;&#x4e3a;&#x79cd;&#x6b21;&#x53f7;&#x4ee5;&#x53ca;&#x8f85;&#x52a9;&#x533a;&#x5206;&#x53f7;</from><to>&#x9a8c;&#x8bc1;&#x79cd;&#x6b21;&#x53f7;&#x662f;&#x5426;&#x4e3a;&#x6b63;&#x6574;&#x6570;</to><enabled>Y</enabled> </hop>
+  <hop> <from>&#x9a8c;&#x8bc1;&#x79cd;&#x6b21;&#x53f7;&#x662f;&#x5426;&#x4e3a;&#x6b63;&#x6574;&#x6570;</from><to>&#x5b57;&#x6bb5;&#x9009;&#x62e9;</to><enabled>Y</enabled> </hop>
+  <hop> <from>&#x9986;&#x85cf;&#x4e66;&#x76ee;&#x8868;&#x8f93;&#x5165;</from><to>&#x62c6;&#x5206;&#x79cd;&#x6b21;&#x53f7;&#x4e3a;&#x79cd;&#x6b21;&#x53f7;&#x4ee5;&#x53ca;&#x8f85;&#x52a9;&#x533a;&#x5206;&#x53f7;</to><enabled>Y</enabled> </hop>
+  </order>
+  <step>
+    <name>&#x5b57;&#x6bb5;&#x9009;&#x62e9;</name>
+    <type>SelectValues</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+         <partitioning>
+           <method>none</method>
+           <schema_name/>
+           </partitioning>
+    <fields>      <field>        <name>ID</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>ORG_ID</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>ISBN</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>TITLE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>SUB_TITLE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>TIED_TITLE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>PART_NAME</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>PART_NUM</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>SERIES_NAME</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>AUTHOR</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>SUB_AUTHOR</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>SERIES_EDITOR</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>TRANSLATOR</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>PUBLISHING_NAME</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>PUBLISHING_ADDRESS</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>PUBLISHING_TIME</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>LIBRARSORT_CODE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>UNITPRICE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>EDITION</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>LANGUAGE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>MEASURE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>PAGE_NO</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>BINDING_FORM</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>BEST_AGE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>ATTACHMENT_NOTE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>SUBJECT</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>CONTENT</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>CREATE_BY</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>CREATE_DATE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>UPDATE_BY</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>UPDATE_DATE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>REMARKS</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>DEL_FLAG</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>TANEJI_NO</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>ASS_NO</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>PURPOSE</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>      <field>        <name>MARC64</name>
+        <rename/>
+        <length>-2</length>
+        <precision>-2</precision>
+      </field>        <select_unspecified>N</select_unspecified>
+      <meta>        <name>UNITPRICE</name>
+        <rename>price</rename>
+        <type>BigNumber</type>
+        <length>-2</length>
+        <precision>-2</precision>
+        <conversion_mask/>
+        <date_format_lenient>false</date_format_lenient>
+        <date_format_locale/>
+        <date_format_timezone/>
+        <lenient_string_to_number>false</lenient_string_to_number>
+        <encoding/>
+        <decimal_symbol/>
+        <grouping_symbol/>
+        <currency_symbol/>
+        <storage_type/>
+      </meta>    </fields>     <cluster_schema/>
+ <remotesteps>   <input>   </input>   <output>   </output> </remotesteps>    <GUI>
+      <xloc>832</xloc>
+      <yloc>352</yloc>
+      <draw>Y</draw>
+      </GUI>
+    </step>
+
+  <step>
+    <name>&#x62c6;&#x5206;&#x79cd;&#x6b21;&#x53f7;&#x4e3a;&#x79cd;&#x6b21;&#x53f7;&#x4ee5;&#x53ca;&#x8f85;&#x52a9;&#x533a;&#x5206;&#x53f7;</name>
+    <type>FieldSplitter</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+         <partitioning>
+           <method>none</method>
+           <schema_name/>
+           </partitioning>
+   <splitfield>TYPENUMBER</splitfield>
+   <delimiter>&#x3a;</delimiter>
+   <enclosure/>
+    <fields>      <field>        <name>TANEJI_NO_1</name>
+        <id/>
+        <idrem>N</idrem>
+        <type>String</type>
+        <format/>
+        <group/>
+        <decimal/>
+        <currency/>
+        <length>100</length>
+        <precision>-1</precision>
+        <nullif/>
+        <ifnull/>
+        <trimtype>both</trimtype>
+      </field>      <field>        <name>ASS_NO</name>
+        <id/>
+        <idrem>N</idrem>
+        <type>String</type>
+        <format/>
+        <group/>
+        <decimal/>
+        <currency/>
+        <length>100</length>
+        <precision>-1</precision>
+        <nullif/>
+        <ifnull/>
+        <trimtype>both</trimtype>
+      </field>    </fields>     <cluster_schema/>
+ <remotesteps>   <input>   </input>   <output>   </output> </remotesteps>    <GUI>
+      <xloc>528</xloc>
+      <yloc>352</yloc>
+      <draw>Y</draw>
+      </GUI>
+    </step>
+
+  <step>
+    <name>&#x63d2;&#x5165; &#x2f; &#x66f4;&#x65b0;</name>
+    <type>InsertUpdate</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+         <partitioning>
+           <method>none</method>
+           <schema_name/>
+           </partitioning>
+    <connection>&#x5355;&#x9986;&#x6570;&#x636e;&#x5e93;&#x8fde;&#x63a5;</connection>
+    <commit>10000</commit>
+    <update_bypassed>N</update_bypassed>
+    <lookup>
+      <schema/>
+      <table>catalog_book_directory</table>
+      <key>
+        <name>ID</name>
+        <field>ID</field>
+        <condition>&#x3d;</condition>
+        <name2/>
+      </key>
+      <value>
+        <name>ID</name>
+        <rename>ID</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>ORG_ID</name>
+        <rename>ORG_ID</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>ISBN</name>
+        <rename>ISBN</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>TITLE</name>
+        <rename>TITLE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>SUB_TITLE</name>
+        <rename>SUB_TITLE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>TIED_TITLE</name>
+        <rename>TIED_TITLE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>PART_NAME</name>
+        <rename>PART_NAME</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>PART_NUM</name>
+        <rename>PART_NUM</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>SERIES_NAME</name>
+        <rename>SERIES_NAME</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>AUTHOR</name>
+        <rename>AUTHOR</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>SUB_AUTHOR</name>
+        <rename>SUB_AUTHOR</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>SERIES_EDITOR</name>
+        <rename>SERIES_EDITOR</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>TRANSLATOR</name>
+        <rename>TRANSLATOR</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>PUBLISHING_NAME</name>
+        <rename>PUBLISHING_NAME</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>PUBLISHING_ADDRESS</name>
+        <rename>PUBLISHING_ADDRESS</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>PUBLISHING_TIME</name>
+        <rename>PUBLISHING_TIME</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>LIBRARSORT_CODE</name>
+        <rename>LIBRARSORT_CODE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>price</name>
+        <rename>price</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>EDITION</name>
+        <rename>EDITION</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>LANGUAGE</name>
+        <rename>LANGUAGE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>MEASURE</name>
+        <rename>MEASURE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>PAGE_NO</name>
+        <rename>PAGE_NO</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>BINDING_FORM</name>
+        <rename>BINDING_FORM</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>BEST_AGE</name>
+        <rename>BEST_AGE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>ATTACHMENT_NOTE</name>
+        <rename>ATTACHMENT_NOTE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>SUBJECT</name>
+        <rename>SUBJECT</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>CONTENT</name>
+        <rename>CONTENT</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>CREATE_BY</name>
+        <rename>CREATE_BY</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>CREATE_DATE</name>
+        <rename>CREATE_DATE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>UPDATE_BY</name>
+        <rename>UPDATE_BY</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>UPDATE_DATE</name>
+        <rename>UPDATE_DATE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>REMARKS</name>
+        <rename>REMARKS</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>DEL_FLAG</name>
+        <rename>DEL_FLAG</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>TANEJI_NO</name>
+        <rename>TANEJI_NO</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>ASS_NO</name>
+        <rename>ASS_NO</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>PURPOSE</name>
+        <rename>PURPOSE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>MARC64</name>
+        <rename>MARC64</rename>
+        <update>Y</update>
+      </value>
+    </lookup>
+     <cluster_schema/>
+ <remotesteps>   <input>   </input>   <output>   </output> </remotesteps>    <GUI>
+      <xloc>1040</xloc>
+      <yloc>352</yloc>
+      <draw>Y</draw>
+      </GUI>
+    </step>
+
+  <step>
+    <name>&#x9986;&#x85cf;&#x4e66;&#x76ee;&#x8868;&#x8f93;&#x5165;</name>
+    <type>TableInput</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+         <partitioning>
+           <method>none</method>
+           <schema_name/>
+           </partitioning>
+    <connection>&#x56fe;&#x4e66;v1.0&#x6570;&#x636e;&#x5e93;&#x8fde;&#x63a5;</connection>
+    <sql>with temp as &#x28;&#xd;&#xa;select  t.libraryid &#x7c;&#x7c; &#x27;&#x27; as id,&#xd;&#xa;       t.unitid as ORG_ID,&#xd;&#xa;       NVL&#x28;replace&#x28;t.isbn, &#x27;-&#x27;, &#x27;&#x27;&#x29;, &#x27;&#x4e0d;&#x8be6;&#x27;&#x29; as ISBN,&#xd;&#xa;       nvl&#x28;t.SUBJECT, &#x27;&#x4e0d;&#x8be6;&#x27;&#x29; as TITLE,&#xd;&#xa;       t.SUBTITLE as SUB_TITLE,&#xd;&#xa;       t.APPOSETITLE as TIED_TITLE,&#xd;&#xa;       null as PART_NAME,&#xd;&#xa;       null as PART_NUM,&#xd;&#xa;       t.SERIESNAME as SERIES_NAME,&#xd;&#xa;       nvl&#x28;t.author, &#x27;&#x4e0d;&#x8be6;&#x27;&#x29; as AUTHOR,&#xd;&#xa;       t.RESTDUTY as SUB_AUTHOR,&#xd;&#xa;       t.SERIESEDIT as SERIES_EDITOR,&#xd;&#xa;       t.TRANSLATOR as TRANSLATOR,&#xd;&#xa;       nvl&#x28;t.PUBLISHNAME, &#x27;&#x4e0d;&#x8be6;&#x27;&#x29; as PUBLISHING_NAME,&#xd;&#xa;       t.PUBLISHADDR as PUBLISHING_ADDRESS,&#xd;&#xa;       nvl&#x28;t.PUBLISHDATE, &#x27;&#x4e0d;&#x8be6;&#x27;&#x29; as PUBLISHING_TIME,&#xd;&#xa;       --t.ASSORTNUM as LIBRARSORT_CODE,&#xd;&#xa;       nvl&#x28;t.unitprice, &#x27;0&#x27;&#x29; unitprice,&#xd;&#xa;       t.PRINTNUM as EDITION,&#xd;&#xa;       decode&#x28;t.LANGUAGE, &#x27;chi&#x27;, &#x27;0&#x27;, &#x27;eng&#x27;, &#x27;1&#x27;&#x29; as LANGUAGE,&#xd;&#xa;       t.LIBSIZE as MEASURE,&#xd;&#xa;       t.PAGESUM as PAGE_NO,&#xd;&#xa;       t.BINDFORM as BINDING_FORM,&#xd;&#xa;       null as BEST_AGE,&#xd;&#xa;       null as ATTACHMENT_NOTE,&#xd;&#xa;       t.SUBJECTCI as SUBJECT,&#xd;&#xa;       null as CONTENT,&#xd;&#xa;       t.OPERATEID as CREATE_BY,&#xd;&#xa;       to_date&#x28;t.OPERATEDATE, &#x27;yyyy-MM-dd hh24&#x3a;mi&#x3a;ss&#x27;&#x29; as CREATE_DATE,&#xd;&#xa;       t.OPERATEID as UPDATE_BY,&#xd;&#xa;       to_date&#x28;t.OPERATEDATE, &#x27;yyyy-MM-dd hh24&#x3a;mi&#x3a;ss&#x27;&#x29; as UPDATE_DATE,&#xd;&#xa;       &#x27;&#x27; as REMARKS,&#xd;&#xa;       &#x27;0&#x27; as DEL_FLAG,&#xd;&#xa;       --TYPENUMBER,&#xd;&#xa;       --t.indexnum,&#xd;&#xa;       decode&#x28;t.CIRCULATETYPE,&#xd;&#xa;              &#x27;2001&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2002&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2003&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2005&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2006&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2007&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2008&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2009&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2010&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2011&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2012&#x27;,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              &#x27;2004&#x27;,&#xd;&#xa;              &#x27;2&#x27;&#x29; as PURPOSE,&#xd;&#xa;       null as MARC64,&#xd;&#xa;       instr&#x28;t.indexnum,&#x27;&#x2f;&#x27;&#x29; indexnum_idx,&#xd;&#xa;       --substr&#x28;t.indexnum, 0, instr&#x28;t.indexnum, &#x27;&#x2f;&#x27;, -1, 1&#x29; - 1&#x29;,&#xd;&#xa;      -- substr&#x28;t.indexnum, instr&#x28;t.indexnum, &#x27;&#x2f;&#x27;, -1, 1&#x29; &#x2b; 1&#x29;,&#xd;&#xa;       t.indexnum&#xd;&#xa;  from schl_library t&#xd;&#xa;  left join CODE_USER US ON T.OPERATEID &#x3d; US.USERID&#xd;&#xa;--where  regexp_like&#x28;t.indexnum, &#x27;&#x5e;&#x5b;A-Za-z&#x5d;&#x27;&#x29; &#xd;&#xa;--and not  regexp_like&#x28;substr&#x28;t.indexnum,2&#x29;, &#x27;&#x5e;&#x5b;A-Za-z&#x5d;&#x27;&#x29;&#xd;&#xa;--  and length&#x28;t.indexnum&#x29; &#x3d; lengthb&#x28;t.indexnum&#x29;&#xd;&#xa; -- and t.indexnum  like &#x27;&#x25;&#x2f;&#x25;&#x27;&#xd;&#xa; --where nvl&#x28;LENGTH&#x28;REGEXP_REPLACE&#x28;t.indexnum, &#x27;&#x5b;&#x5e;&#x2f;&#x5d;&#x2b;&#x27;, &#x27;&#x27;&#x29;&#x29;, 0&#x29; &#x3e; 1&#xd;&#xa; &#x29;&#xd;&#xa;select t.&#x2a;,&#xd;&#xa;       decode&#x28;t.indexnum_idx,&#xd;&#xa;              0,&#xd;&#xa;              t.indexnum,&#xd;&#xa;              substr&#x28;t.indexnum, 0, instr&#x28;t.indexnum, &#x27;&#x2f;&#x27;, -1, 1&#x29; - 1&#x29;&#x29; LIBRARSORT_CODE,&#xd;&#xa;       decode&#x28;t.indexnum_idx,&#xd;&#xa;              0,&#xd;&#xa;              &#x27;0&#x27;,&#xd;&#xa;              substr&#x28;t.indexnum, instr&#x28;t.indexnum, &#x27;&#x2f;&#x27;, -1, 1&#x29; &#x2b; 1&#x29;&#x29; TYPENUMBER&#xd;&#xa;  from temp t&#xd;&#xa;</sql>
+    <limit>0</limit>
+    <lookup/>
+    <execute_each_row>N</execute_each_row>
+    <variables_active>N</variables_active>
+    <lazy_conversion_active>N</lazy_conversion_active>
+     <cluster_schema/>
+ <remotesteps>   <input>   </input>   <output>   </output> </remotesteps>    <GUI>
+      <xloc>288</xloc>
+      <yloc>352</yloc>
+      <draw>Y</draw>
+      </GUI>
+    </step>
+
+  <step>
+    <name>&#x9a8c;&#x8bc1;&#x79cd;&#x6b21;&#x53f7;&#x662f;&#x5426;&#x4e3a;&#x6b63;&#x6574;&#x6570;</name>
+    <type>ScriptValueMod</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+         <partitioning>
+           <method>none</method>
+           <schema_name/>
+           </partitioning>
+    <compatible>N</compatible>
+    <optimizationLevel>9</optimizationLevel>
+    <jsScripts>      <jsScript>        <jsScript_type>0</jsScript_type>
+        <jsScript_name>Script 1</jsScript_name>
+        <jsScript_script>&#x2f;&#x2f;Script here&#xd;&#xa;&#xd;&#xa;function isPositiveNum&#x28;s&#x29;&#x7b;&#x2f;&#x2f;&#x662f;&#x5426;&#x4e3a;&#x6b63;&#x6574;&#x6570;  &#xd;&#xa;    var re &#x3d; &#x2f;&#x5e;&#x5b;0-9&#x5d;&#x2a;&#x5b;1-9&#x5d;&#x5b;0-9&#x5d;&#x2a;&#x24;&#x2f; &#x3b;  &#xd;&#xa;    return re.test&#x28;s&#x29;  &#xd;&#xa;&#x7d; &#xd;&#xa;var TANEJI_NO &#x3d;isPositiveNum&#x28;TANEJI_NO_1&#x29;&#x3f;Number&#x28;TANEJI_NO_1&#x29;&#x3a;0&#x3b;&#xd;&#xa;&#xd;&#xa;</jsScript_script>
+      </jsScript>    </jsScripts>    <fields>      <field>        <name>TANEJI_NO</name>
+        <rename>TANEJI_NO</rename>
+        <type>String</type>
+        <length>-1</length>
+        <precision>-1</precision>
+        <replace>N</replace>
+      </field>    </fields>     <cluster_schema/>
+ <remotesteps>   <input>   </input>   <output>   </output> </remotesteps>    <GUI>
+      <xloc>688</xloc>
+      <yloc>352</yloc>
+      <draw>Y</draw>
+      </GUI>
+    </step>
+
+  <step_error_handling>
+  </step_error_handling>
+   <slave-step-copy-partition-distribution>
+</slave-step-copy-partition-distribution>
+   <slave_transformation>N</slave_transformation>
+
+</transformation>
