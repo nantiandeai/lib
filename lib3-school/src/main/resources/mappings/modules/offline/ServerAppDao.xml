@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.offline.dao.ServerAppDao">
+	<sql id="serverAppColumns">
+		a.id AS "id",
+		a.user_name AS "userName",
+		a.org_id AS "orgId",
+		a.cert_key AS "certKey",
+		a.status AS "status",
+		a.create_date AS "createDate",
+		a.update_date AS "updateDate"
+	</sql>
+	<insert id="insert">
+	insert into SERVER_APP
+	  (
+	   id,
+	   user_name,
+	   org_id,
+	   cert_key,
+	   status,
+	   create_date,
+	   update_date
+	   )
+	values
+	  (#{id}, #{userName}, #{orgId}, #{certKey},#{status}, #{createDate}, #{updateDate})
+	</insert>
+	<update id="update">
+	  update SERVER_APP set status=#{status},update_date=#{updateDate} where 1=1
+		 <if test="certKey!=null and certKey !=''">
+			and cert_key=#{certKey}
+		 </if>
+		<if test="orgId!=null and orgId !=''">
+			and org_id=#{orgId}
+		</if>
+	</update>
+	<update id="updateDate">
+		update SERVER_APP set create_date=#{createDate},update_date=#{updateDate} where 1=1
+		and cert_key=#{certKey} and org_id=#{orgId}
+	</update>
+	<select id="getList" resultType="ServerApp">
+		select <include refid="serverAppColumns"/> from SERVER_APP a
+		<where>
+			a.org_id is not null
+		<if test="orgId != null and orgId != ''">
+			and a.org_id = #{orgId}
+		</if>
+		<if test="status != null and status != ''">
+			and a.status=#{status}
+		</if>
+		<if test="certKey != null and certKey != ''">
+			and a.cert_key=#{certKey}
+		</if>
+		</where>
+	</select>
+	<sql id="readerTemp">
+		with borrow_temp as (
+		 	SELECT b.reader_id, COUNT(1) c
+		   FROM circulate_bill b
+		   WHERE b.status IN ('01', '71')
+			and b.del_flag = '0'
+			and b.org_id = #{orgId}
+			<if test="endDate!=null">
+				<![CDATA[
+			and b.update_date<=#{endDate}
+				]]>
+			</if>
+		  group by b.reader_id
+ 		),
+ 		temp_rule as (
+		   select t.id,
+		   t.borrow_number,
+		   t.borrow_days,
+		   t.reader_type,
+		   decode(t.org_id, null, '0', '1') || t.id as p
+	     from circulate_rule t
+	     where nvl(t.org_id, #{orgId}) = #{orgId}
+	     and t.del_flag = '0'
+ 		),
+ 		rule_info as (
+           	select ru.*
+            from temp_rule ru
+            where ru.p in
+                  (select max(p) from temp_rule group by reader_type)
+  		)
+	</sql>
+	<!--根据时间区间的条件查询读者数据-->
+	<select id="queryReaderData" resultType="ReaderVo">
+		<include refid="readerTemp"/>
+		select * from (select rownum rn,t1.* from (
+		select a.id as "id",
+		a.org_id as "orgId",
+		g.name as "groupName",
+		c.card as "card",
+		a.name as "name",
+		a.email as "email",
+		a.phone as "phone",
+		a.cert_type as "certType",
+		a.cert_num as "certNum",
+		a.reader_type as "readerType",
+		r.borrow_number as "borrowNumber",
+		nvL(bt.c, 0) as "countBorrow",
+		r.borrow_days as "borrowDays",
+		c.START_DATE as "startDate",
+		c.end_date as "endDate",
+		a.create_date as "createDate",
+		a.update_date as "updateDate",
+		case
+		when ((trunc(sysdate) - trunc(c.end_date)) > 0 and nvl(c.status,'0')='0') then '3'
+		else c.status
+		end as "status",
+		a.del_flag as "delFlag"
+		FROM circulate_reader a
+		INNER JOIN circulate_card c on (c.org_id = #{orgId} and c.reader_id = a.id  and c.status != '4')
+		LEFT JOIN circulate_group g on g.org_id = #{orgId}  and a.group_id = g.id
+		LEFT JOIN rule_info r on a.reader_type = r.reader_type
+		LEFT JOIN borrow_temp bt on a.id = bt.reader_id
+		where a.org_id=#{orgId}
+		<if test="endDate!=null or startDate!=null">
+			and ((
+			1=1
+			<if test="startDate!=null">
+			<![CDATA[and a.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+			<![CDATA[and a.update_date <= #{endDate}]]>
+			</if>
+			) or
+			(exists (
+			select 1 from circulate_bill bi where bi.org_id=#{orgId} and bi.del_flag='0' and bi.reader_id=a.id
+			<if test="startDate!=null">
+				<![CDATA[and bi.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and bi.update_date <= #{endDate}]]>
+			</if>
+			))
+
+			or exists( select 1 from circulate_rule rule where rule.reader_type=a.reader_type and rule.del_flag='0' and rule.org_id=#{orgId}
+			<if test="startDate!=null">
+				<![CDATA[and rule.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and rule.update_date <= #{endDate}]]>
+			</if>
+			)
+
+			or (
+			1=1
+			<if test="startDate!=null">
+				<![CDATA[and g.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and g.update_date <= #{endDate}]]>
+			</if>
+			)
+			)
+
+			or (
+			1=1
+			<if test="startDate!=null">
+				<![CDATA[and c.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and c.update_date <= #{endDate}]]>
+			</if>
+			)
+		</if>
+		<![CDATA[	) t1 where rownum<=#{pageSize} * #{pageNo} ) t2 where t2.rn>=((#{pageSize} * (#{pageNo} - 1 ))+1)
+		]]>
+	</select>
+	<select id="readerCount" resultType="Integer">
+		select count(1) from circulate_reader a where a.org_id = #{orgId}
+		<if test="endDate!=null or startDate!=null">
+			and ((
+			1=1
+			<if test="startDate!=null">
+				<![CDATA[and a.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and a.update_date <= #{endDate}]]>
+			</if>
+			) or
+			exists (
+			select 1 from circulate_bill bi where bi.org_id=#{orgId} and bi.del_flag='0' and bi.reader_id=a.id
+			<if test="startDate!=null">
+				<![CDATA[and bi.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and bi.update_date <= #{endDate}]]>
+			</if>
+			)
+
+			or exists (
+				select 1 from circulate_group gro where gro.id=a.group_id
+				<if test="startDate!=null">
+					<![CDATA[and gro.update_date >= #{startDate}]]>
+				</if>
+				<if test="endDate!=null">
+					<![CDATA[and gro.update_date <= #{endDate}]]>
+				</if>
+			)
+
+			or exists (
+			select 1 from circulate_card card  where card.reader_id=a.id and card.org_id=#{orgId}
+			<if test="startDate!=null">
+				<![CDATA[and card.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and card.update_date <= #{endDate}]]>
+			</if>
+			)
+
+			or exists (
+			select 1 from circulate_rule rule  where rule.reader_type=a.reader_type and rule.org_id=#{orgId}
+			<if test="startDate!=null">
+				<![CDATA[and rule.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and rule.update_date <= #{endDate}]]>
+			</if>
+			)
+			)
+		</if>
+	</select>
+
+	<select id="copyCount" resultType="Integer">
+		select count(1) from catalog_copy c,catalog_book_directory b  where c.org_id = #{orgId} and b.org_id=#{orgId} and c.book_directory_id=b.id
+		and ( (1=1
+		<if test="startDate!=null">
+			<![CDATA[and c.update_date >= #{startDate}]]>
+		</if>
+		<if test="endDate!=null">
+			<![CDATA[and c.update_date <= #{endDate}]]>
+		</if> )
+		or  (
+			1=1
+			<if test="startDate!=null">
+				<![CDATA[and b.update_date >= #{startDate}]]>
+			</if>
+			<if test="endDate!=null">
+				<![CDATA[and b.update_date <= #{endDate}]]>
+			</if>
+		)
+		)
+	</select>
+	<select id="periodicalCount" resultType="Integer">
+		select count(1) from peri_binding c,peri_directory b  where c.org_id = #{orgId} and b.org_id=#{orgId} and c.peri_directory_id=b.id
+		and ( (1=1
+		<if test="startDate!=null">
+			<![CDATA[and c.update_date >= #{startDate}]]>
+		</if>
+		<if test="endDate!=null">
+			<![CDATA[and c.update_date <= #{endDate}]]>
+		</if> )
+		or  (
+		1=1
+		<if test="startDate!=null">
+			<![CDATA[and b.update_date >= #{startDate}]]>
+		</if>
+		<if test="endDate!=null">
+			<![CDATA[and b.update_date <= #{endDate}]]>
+		</if>
+		)
+		)
+	</select>
+	<!--根据时间区间查询副本数据信息-->
+	<select id="queryCopyData" resultType="CopyVo">
+		select * from (select rownum rn,t1.* from (
+		select
+		c.id as "id",
+		c.book_directory_id as "bookDirectoryId",
+		c.org_id as "orgId",
+		c.bar_code as "barCode",
+		c.batch_no as "batchNo",
+		c.status as "status",
+		c.is_renew as "isRenew",
+		c.is_stained as "isStained",
+		b.isbn as "isbn",
+		b.title as "title",
+		b.sub_title as "subTitle",
+		b.tied_title as "tiedTitle",
+		b.part_name as "partName",
+		b.part_num  as "partNum",
+		b.series_name as "seriesName",
+		b.author as "author",
+		b.sub_author as "subAuthor",
+		b.series_editor as "seriesEditor",
+		b.translator as "translator",
+		b.publishing_name as "publishingName",
+		b.publishing_address as "publishingAddress",
+		b.publishing_time as "publishingTime",
+		s.name as "collectionSiteName",
+		b.librarsort_code as "librarsortCode",
+		b.price as "price",
+		b.edition as "edition",
+		b.language as "language",
+		b.measure as "measure",
+		b.page_no as "pageNo",
+		b.binding_form as "bindingForm",
+		b.best_age as "bestAge",
+		b.attachment_note as "attachmentNote",
+		b.subject as "subject",
+		b.taneji_no as "tanejiNo",
+		b.ass_no as "assNo",
+		b.book_no as "bookNo",
+		c.create_date as "createDate",
+		c.update_date as "updateDate",
+		c.del_flag as "delFlag"
+		from catalog_copy c
+		inner join catalog_book_directory b on
+		c.book_directory_id = b.id and b.org_id = #{orgId}
+		LEFT JOIN SYS_COLLECTION_SITE s ON (c.collection_site_id = s.id  and s.org_id = #{orgId})
+		where c.org_id = #{orgId}
+		<if test="startDate!=null">
+			<![CDATA[and ( c.update_date >= #{startDate} or b.update_date >=#{startDate} )]]>
+		</if>
+		<if test="endDate!=null">
+			<![CDATA[and (c.update_date <= #{endDate} or b.update_date<=#{endDate}  )]]>
+		</if>
+		<![CDATA[) t1 where rownum<=#{pageSize} * #{pageNo} ) t2 where t2.rn>=((#{pageSize} * (#{pageNo} - 1 ))+1)
+		]]>
+	</select>
+
+	<!--根据时间区间查询期刊数据信息-->
+	<select id="queryPeriodicalData" resultType="PeriodicalVo">
+		select * from (select rownum rn,t1.* from (
+		select c.id         as "id",
+		c.peri_directory_id as "periDirectoryId",
+		c.org_id            as "orgId",
+		c.bar_code          as "barCode",
+		c.is_renew          as "isRenew",
+		c.is_order          as "isOrder",
+		b.issn              as "issn",
+		b.title             as "title",
+		b.sub_title         as "subTitle",
+		b.author            as "author",
+		b.publishing_name   as "publishingName",
+		c.publishing_year   as "publishingYear",
+		s.name              as "collectionSiteName",
+		b.librarsort_code   as "librarsortCode",
+		b.price             as "price",
+		b.peri_num          as "periNum",
+		b.email_num         as "emailNum",
+		b.language          as "language",
+		b.lev               as "lev",
+		b.peri_type         as "periType",
+		c.binding_num       as "bindingNum",
+		c.book_time_no      as "bookTimeNo",
+		c.ass_no            as "assNo",
+		c.status            as "status",
+		b.publishing_fre    as "publishingFre",
+		b.book_size         as "bookSize",
+		c.create_date       as "createDate",
+		c.update_date       as "updateDate",
+		c.del_flag          as "delFlag"
+		from peri_binding c
+		inner join peri_directory b on c.peri_directory_id = b.id
+		and b.org_id = #{orgId}
+		LEFT JOIN SYS_COLLECTION_SITE s ON (c.collection_site_id = s.id and
+		s.org_id = #{orgId})
+		where c.org_id = #{orgId}
+		<if test="startDate!=null">
+			<![CDATA[and ( c.update_date >= #{startDate} or b.update_date >=#{startDate} )]]>
+		</if>
+		<if test="endDate!=null">
+			<![CDATA[and (c.update_date <= #{endDate} or b.update_date<=#{endDate}  )]]>
+		</if>
+		<![CDATA[) t1 where rownum<=#{pageSize} * #{pageNo} ) t2 where t2.rn>=((#{pageSize} * (#{pageNo} - 1 ))+1)
+		]]>
+	</select>
+</mapper>

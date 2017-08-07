@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.ImportTemplateDao">
+    
+	<sql id="importTemplateColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.file_name AS "fileName",
+		a.file_path AS "filePath",
+		a.status AS "status",
+		a.tmp_type AS "tmpType",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="importTemplateJoins">
+	</sql>
+
+	<select id="findList" resultType="ImportTemplate">
+		SELECT 
+			<include refid="importTemplateColumns"/>
+		FROM catalog_import_template a
+		<include refid="importTemplateJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<!-- 数据范围过滤-->
+			${sqlMap.dsf}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO catalog_import_template(
+			id,
+			org_id,
+			file_name,
+			file_path,
+			status,
+			tmp_type,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{fileName},
+			#{filePath},
+			#{status},
+			#{tmpType},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE catalog_import_template SET 	
+			file_name = #{fileName},
+			file_path = #{filePath},
+			status = #{status},
+			tmp_type = #{tmpType},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE catalog_import_template SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</update>
+
+	<select id="findDefaultTemplate" resultType="ImportTemplate">
+		SELECT
+		<include refid="importTemplateColumns"/>
+		FROM catalog_import_template a
+		<include refid="importTemplateJoins"/>
+		<where>
+			a.del_flag = '0' AND a.status = '0' AND a.org_id = #{orgId}
+		</where>
+	</select>
+
+	<select id="findSameFileNameList" resultType="ImportTemplate">
+		SELECT
+		<include refid="importTemplateColumns"/>
+		FROM catalog_import_template a
+		<include refid="importTemplateJoins"/>
+		<where>
+			a.del_flag = '0' AND a.file_name = #{fileName} AND a.org_id = #{orgId}
+		</where>
+	</select>
+	
+</mapper>

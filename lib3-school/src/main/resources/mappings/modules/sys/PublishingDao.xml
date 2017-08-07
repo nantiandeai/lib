@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.sys.dao.PublishingDao">
+    
+	<sql id="publishingColumns">
+		a.id AS "id",
+		a.code AS "code",
+		a.name AS "name",
+		a.are_code AS "areCode",
+		a.are_name AS "areName",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="publishingJoins">
+	</sql>
+    
+	<select id="get" resultType="Publishing">
+		SELECT 
+			<include refid="publishingColumns"/>
+		FROM sys_publishing a
+		<include refid="publishingJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="Publishing">
+		SELECT 
+			<include refid="publishingColumns"/>
+		FROM sys_publishing a
+		<include refid="publishingJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="name != null and name != ''">
+				AND a.name LIKE '%'||#{name}||'%'
+			</if>
+			<if test="isbn != null and isbn != ''">
+				AND replace(a.code,'-','') LIKE
+				substr(#{isbn}, 0, length(replace(a.code,'-',''))) || '%'
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sys_publishing(
+			id,
+			code,
+			name,
+			are_code,
+			are_name,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{code},
+			#{name},
+			#{areCode},
+			#{areName},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sys_publishing SET 	
+			code = #{code},
+			name = #{name},
+			are_code = #{areCode},
+			are_name = #{areName},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE sys_publishing SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	
+</mapper>

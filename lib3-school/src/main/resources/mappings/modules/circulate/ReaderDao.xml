@@ -1,0 +1,675 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.ReaderDao">
+    
+	<sql id="readerColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.group_id AS "groupId",
+		a.name AS "name",
+		a.email AS "email",
+		a.phone AS "phone",
+		a.cert_type AS "certType",
+		a.cert_num AS "certNum",
+		a.reader_type AS "readerType",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.password AS "password"
+	</sql>
+	
+	<sql id="readerJoins">
+	</sql>
+
+	<sql id="readerCardJoins">
+		left join circulate_card b on a.id=b.reader_id and a.org_id=b.org_id
+	</sql>
+	<select id="get" resultType="Reader">
+		SELECT 
+			<include refid="readerColumns"/>
+		FROM circulate_reader a where id=#{id} and org_id=#{orgId}
+	</select>
+
+
+
+	<!--阅读平台第一次根据读者证号和初始密码登录-->
+	<select id="queryByReaderPlatfrom" resultType="Reader">
+		SELECT
+		<include refid="readerColumns"/>
+		FROM circulate_reader a
+		<include refid="readerCardJoins"/>
+		<where>
+			a.del_flag='0' and b.del_flag='0' and b.status='0' and b.end_date>sysdate
+			<if test="card != null and card != ''">
+				AND b.card = #{card}
+			</if>
+			<if test="password != null and password != ''">
+				AND b.password = #{password}
+			</if>
+			AND a.org_id = #{orgId}
+		</where>
+	</select>
+	
+	<select id="findList" resultType="Reader">
+		SELECT
+		a.id,
+		c.card as "card",
+		a.name as "name",
+		a.sex as "sex",
+		a.img as "img",
+		b.name as "groupName",
+		a.reader_type as "readerType",
+		c.start_date as "startDate",
+		c.end_date as "endDate",
+		b.id as "groupId",
+		a.cert_type as "certType",
+		a.cert_num as "certNum",
+		a.phone as "phone",
+		c.deposit as "deposit",
+	    c.status as status,
+		c.card_img as cardImg,
+		( select count(1) from circulate_bill f where f.del_flag='0' and f.reader_id=a.id and f.bill_type='0' and f.org_id=a.org_id) "circulateNum"
+		FROM circulate_reader a
+		inner join CIRCULATE_GROUP b on (a.group_id = b.id and b.del_flag = #{DEL_FLAG_NORMAL} and b.org_id=#{orgId})<!--为了让数据都一直的情况下加在这里做判断-->
+		inner join CIRCULATE_CARD c on (c.reader_id = a.id and c.del_flag=#{DEL_FLAG_NORMAL} and c.status!='4' AND c.org_id=#{orgId})
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+
+			<if test="id != null and id != ''">
+				AND a.id=#{id}
+			</if>
+
+			<if test="name != null and name != ''">
+				AND a.name LIKE '%'||#{name}||'%' OR c.card LIKE '%'||#{name}||'%'
+			</if>
+
+			<if test="readerType != null and readerType != ''">
+				AND a.reader_type = #{readerType}
+			</if>
+
+			<if test="status != null and status != ''">
+				AND c.status = #{status}
+			</if>
+
+			<if test="groupName != null and groupName != ''">
+				AND b.name LIKE '%'||#{groupName}||'%'
+			</if>
+
+			<if test="card != null and card != ''">
+				AND (c.card LIKE '%'||#{card}||'%' or a.name LIKE '%'||#{card}||'%')
+			</if>
+
+			<choose>
+				<when test="startCard != null and startCard != '' and endCard != null and endCard != ''">
+					<![CDATA[
+		       		and to_number(REGEXP_SUBSTR(c.card, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startCard}, '[[:digit:]]+')) and length(c.card) = length(#{startCard})
+                    and to_number(REGEXP_SUBSTR(c.card, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endCard}, '[[:digit:]]+')) and length(c.card) = length(#{endCard})
+                    and nvl(REGEXP_SUBSTR(c.card, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startCard}, '[[:alpha:]]+'), '0')
+                    and nvl(REGEXP_SUBSTR(c.card, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endCard}, '[[:alpha:]]+'), '0')
+		         ]]>
+				</when>
+				<when test="startCard != null and startCard != ''">
+					and c.card = #{startCard}
+				</when>
+				<when test="endCard != null and endCard != ''">
+					and c.card = #{endCard}
+				</when>
+			</choose>
+
+
+			AND a.org_id=#{orgId}
+		</where>
+		<choose>
+			<when test="orderBy != null and orderBy != ''">
+				<![CDATA[
+					ORDER BY ${orderBy}
+				]]>
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findBorrowReader" resultType="Reader">
+		SELECT
+		r.id,
+		r.name as "name",
+		r.img as "img",
+		g.name as "groupName",
+		r.reader_type as "readerType",
+		g.id as "groupId"
+		from circulate_reader r
+		inner join circulate_group g on r.group_id = g.id
+		and r.org_id = g.org_id
+		and g.del_flag = '0'
+ 		where r.del_flag = '0'
+		<if test="groupId != null and groupId != ''">
+			AND r.group_id in (${groupId})
+		</if>
+		<if test="idList != null and idList != ''">
+			AND r.id IN
+			<foreach item="ids" collection="idList" open="(" separator="," close=")">
+				#{ids}
+			</foreach>
+		</if>
+		and exists (select 1
+		from circulate_bill b
+		where b.reader_id = r.id
+		and b.org_id = r.org_id
+		and b.status in ('01', '71'))
+		AND r.org_id=#{orgId}
+	</select>
+
+
+
+	<insert id="batchSave" parameterType="java.util.List">
+		BEGIN
+
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO circulate_reader(
+			id,
+			org_id,
+			group_id,
+			name,
+			email,
+			phone,
+			cert_type,
+			cert_num,
+			reader_type,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+			) VALUES (
+			#{item.id},
+			#{item.orgId},
+			#{item.groupId},
+			#{item.name},
+			#{item.email},
+			#{item.phone},
+			#{item.certType},
+			#{item.certNum},
+			#{item.readerType},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.delFlag}
+			)
+		</foreach>
+		;END;
+	</insert>
+
+	<update id="createTableTemp" parameterType="java.lang.String">
+		CREATE TABLE ${value} (
+		ID VARCHAR2(64) PRIMARY KEY NOT NULL,
+		ORG_ID VARCHAR2(64),
+		GROUP_ID VARCHAR2(64),
+		GROUP_NAME VARCHAR2(64),
+		GROUP_TYPE CHAR(1),
+		GROUP_STATUS CHAR(1),
+		NAME VARCHAR2(50),
+		SEX CHAR(1),
+		EMAIL VARCHAR2(50),
+		PHONE VARCHAR2(50),
+		CERT_TYPE VARCHAR2(64),
+		CERT_NUM VARCHAR2(50),
+		READER_TYPE CHAR(1),
+		PASSWORD VARCHAR2(100),
+		END_DATE TIMESTAMP(6),
+		CARD VARCHAR2(64),
+		reader_type_name VARCHAR2(64),
+		cert_name VARCHAR2(64),
+		termination_date VARCHAR2(64),
+		error_info NVARCHAR2(255),
+		old_reader_id VARCHAR2(64),
+		CREATE_BY VARCHAR2(64),
+		CREATE_DATE TIMESTAMP(6),
+		UPDATE_BY VARCHAR2(64),
+		UPDATE_DATE TIMESTAMP(6),
+		REMARKS NVARCHAR2(255),
+		DEL_FLAG CHAR(1)
+		)
+	</update>
+
+	<update id="dropTableTemp" parameterType="java.lang.String">
+		declare
+		tblcnt number := 0;
+		begin
+		select count(1) into tblcnt from user_tables ut where ut.TABLE_NAME = upper(#{value});
+		if tblcnt = 1 then
+		execute immediate 'drop table ${value}';
+		end if;
+		end;
+	</update>
+
+	<insert id="batchSaveTemp" parameterType="java.util.List">
+		BEGIN
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO ${tableName} (
+			id,
+			org_id,
+			group_name,
+			name,
+			sex,
+			email,
+			phone,
+			cert_type,
+			cert_num,
+			reader_type,
+			password,
+			end_date,
+			card,
+			reader_type_name,
+			cert_name,
+			termination_date,
+			old_reader_id,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+			) VALUES (
+			#{item.id},
+			#{item.orgId},
+			#{item.groupName},
+			#{item.name},
+			#{item.sex},
+			#{item.email},
+			#{item.phone},
+			#{item.certType},
+			#{item.certNum},
+			#{item.readerType},
+			#{item.password},
+			#{item.endDate},
+			#{item.card},
+			#{item.readerTypeName},
+			#{item.certName},
+			#{item.terminationDate},
+			#{item.oldReaderId},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.delFlag}
+			)
+		</foreach>
+		;END;
+	</insert>
+
+	<insert id="insertNotExistsGroup" parameterType="java.lang.String">
+		merge into circulate_group g using (
+		select
+		sys_guid() id,
+		org_id,
+		group_name,
+		decode(reader_type, 0, 0, 1, 1) group_type,
+		'0' status,
+		sysdate create_date,
+		sysdate update_date,
+		'0' del_flag
+		from ${tableName}
+		group by org_id, group_name, reader_type) t
+		on (g.org_id = t.org_id and g.name = t.group_name and g.del_flag=0)
+		when not matched then
+		insert(
+		id,
+		org_id,
+		name,
+		group_type,
+		status,
+		create_date,
+		update_date,
+		del_flag
+		) values (
+		t.id,
+		t.org_id,
+		t.group_name,
+		t.group_type,
+		t.status,
+		t.create_date,
+		t.update_date,
+		t.del_flag
+		)
+	</insert>
+
+	<update id="updateGroupInfoTemp" parameterType="java.lang.String">
+		update ${tableName} t
+		set (group_id, group_type, group_status) =
+		(select id,group_type,status
+		from circulate_group g
+		where g.org_id = t.org_id
+		and g.name = t.group_name
+		and g.del_flag='0'
+		and rownum = 1
+		)
+	</update>
+
+	<update id="checkGroupInfoTemp" parameterType="java.lang.String">
+		update ${tableName}
+		set error_info = (
+		case
+		when decode(reader_type, 0, 0, 1, 1) != group_type then '读者类型跟读者组织不匹配！'
+		when group_status = 1 then '读者组织已失效！'
+		end
+		)
+	</update>
+
+	<update id="checkReaderCardTemp" parameterType="java.lang.String">
+		merge into ${tableName} t using (
+		select c.card as barcode, r.org_id
+		from circulate_card c inner join circulate_reader r on (c.reader_id = r.id and r.del_flag = '0')
+		where c.del_flag = '0' and r.org_id = #{orgId}
+		union
+		select bar_code as barcode, org_id
+		from catalog_copy where del_flag = '0' and org_id = #{orgId}
+		union
+		select bar_code as barcode, org_id
+		from peri_binding where del_flag = '0' and org_id = #{orgId}
+		union
+		select old_bar_code as barcode, org_id
+		from catalog_barcode_record where del_flag = '0' and org_id = #{orgId}
+		) b
+		on (t.card = b.barcode and t.org_id = b.org_id)
+		when matched then
+		update set t.error_info='读者证号重复或与图书条形码重复！'
+	</update>
+
+	<insert id="insertNotExistsReaderCard" parameterType="java.lang.String">
+		insert into circulate_card(
+		id,
+		reader_id,
+		status,
+		start_date,
+		end_date,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag,
+		card,
+		password,
+		org_id
+		)
+		select
+		sys_guid(),
+		id,
+		0,
+		create_date,
+		end_date,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag,
+		card,
+		password,
+		org_id
+		from ${tableName}
+		where <![CDATA[ length(error_info)<=0 or error_info is null ]]>
+	</insert>
+
+	<select id="findErrorListTemp"  parameterType="java.lang.String" resultType="Reader">
+		select
+		a.card as "card",
+		a.name as "name",
+		a.reader_type_name as "readerTypeName",
+		a.group_name as "groupName",
+		a.termination_date as "terminationDate",
+		a.cert_name as "certName",
+		a.cert_num as "certNum",
+		a.phone as "phone",
+		a.old_reader_id as "oldReaderId",
+		a.error_info as "errorinfo"
+		from ${tableName} a
+		where <![CDATA[ length(error_info)>=0 and error_info is not null ]]>
+	</select>
+
+	<insert id="insertReaderFromTemp">
+		insert into circulate_reader(
+		id,
+		org_id,
+		group_id,
+		name,
+		sex,
+		email,
+		phone,
+		cert_type,
+		cert_num,
+		reader_type,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		)
+		select
+		id,
+		org_id,
+		group_id,
+		name,
+		sex,
+		email,
+		phone,
+		cert_type,
+		cert_num,
+		reader_type,
+		create_by,
+		#{updateDate},
+		update_by,
+		#{updateDate},
+		remarks,
+		del_flag
+		from ${tableName}
+		where <![CDATA[ length(error_info)<=0 or error_info is null ]]>
+	</insert>
+
+	<insert id="insert">
+		INSERT INTO circulate_reader(
+			id,
+			org_id,
+			group_id,
+			img,
+			sex,
+			name,
+			email,
+			phone,
+			cert_type,
+			cert_num,
+			reader_type,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{groupId},
+			#{img},
+			#{sex},
+			#{name},
+			#{email},
+			#{phone},
+			#{certType},
+			#{certNum},
+			#{readerType},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE circulate_reader SET
+			name = #{name},
+			group_id = #{groupId},
+			reader_type = #{readerType},
+			phone = #{phone},
+			cert_type = #{certType},
+			cert_num = #{certNum},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			img = #{img},
+			sex = #{sex}
+		WHERE id = #{id} and org_id=#{orgId}
+	</update>
+	
+	<update id="delete">
+		UPDATE circulate_reader SET 
+			del_flag = #{DEL_FLAG_DELETE},update_date = #{updateDate}<!--加下修改时间，最好是改成统一系统时间-->
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+		AND org_id=#{orgId}
+	</update>
+	<update id="deleteReader" parameterType="Reader">
+		UPDATE circulate_reader SET
+		del_flag = #{DEL_FLAG_DELETE},update_date = #{updateDate}
+		WHERE id = #{id} AND org_id=#{orgId}
+	</update>
+
+	<select id="findByCard" resultType="Reader">
+		select
+			<include refid="readerColumns" />
+		from circulate_reader a
+		where a.del_flag = '0'
+			and exists (select 1 from circulate_card b
+					where a.id = b.reader_id and b.card = #{card} and b.del_flag = '0' AND b.org_id=a.org_id)
+		AND a.org_id = #{orgId}
+	</select>
+
+	<update id="logOutReaderCard" parameterType="Reader"><!--这里注销跟换证修改旧证状态公用-->
+		update CIRCULATE_CARD a
+		set a.UPDATE_DATE =#{updateDate},
+		<choose>
+			<when test="status!=null and status!=''"><!--换旧证情况下走这-->
+				 a.status = #{status},a.new_card = #{newCard}
+			</when>
+			<otherwise>
+				a.status = #{DEL_FLAG_DELETE}
+			</otherwise>
+		</choose>
+		where a.reader_id = #{id}
+		<if test="card!=null and card!=''">
+		AND a.CARD = #{card}
+		</if>
+		AND a.status!='4'
+		AND a.del_flag = #{DEL_FLAG_NORMAL}
+		AND a.org_id=#{orgId}
+	</update>
+
+	<update id="regainReaderCard" parameterType="Reader">
+		update CIRCULATE_CARD a
+		set
+		a.status = #{DEL_FLAG_NORMAL},
+		a.update_date = #{updateDate}
+		where a.reader_id = #{id}
+		and a.status = #{DEL_FLAG_DELETE}
+		AND a.status!='4'
+		AND a.org_id=#{orgId}
+	</update>
+
+	<select id="findGroupByReader" parameterType="Reader" resultType="Group">
+		select
+			a.id,
+			a.name,
+			a.status
+		from
+			circulate_group a
+			left join circulate_reader b  on b.group_id = a.id
+		where b.id = #{id} and a.status = #{DEL_FLAG_NORMAL}
+						   and a.del_flag = #{DEL_FLAG_NORMAL}
+						   AND b.org_id=#{orgId}
+	</select>
+
+	<select id="findCardByReader" parameterType="Reader" resultType="ReaderCard">
+		select
+			b.id,
+			b.card,
+			b.reader_id as readerId,
+			a.org_id as orgId,
+			b.deposit,
+			 case
+			 when trunc(sysdate) - trunc(end_date) > 0 then 1
+			 else 0
+			 end
+			 as times
+		from
+			CIRCULATE_READER a left join CIRCULATE_CARD b on a.id = b.reader_id and b.org_id=b.org_id
+		where a.id = #{id}
+		and a.del_flag = #{DEL_FLAG_NORMAL} and b.del_flag=#{DEL_FLAG_NORMAL}
+		AND b.status!='4' AND a.org_id=#{orgId}
+	</select>
+
+	<select id="checkCard" parameterType="Reader" resultType="java.lang.Integer">
+		select count(1) from CIRCULATE_READER t left join CIRCULATE_CARD c on t.id = c.reader_id and t.org_id=c.org_id
+		where c.card = #{card} and t.del_flag = #{DEL_FLAG_NORMAL} and c.del_flag=#{DEL_FLAG_NORMAL}
+		AND c.status!='4'
+		AND t.org_id=#{orgId}
+	</select>
+	<!--批量修改读者用到-->
+	<update id="updateTypeGroup" parameterType="Reader">
+		update CIRCULATE_READER t
+		set t.reader_type = #{readerType},
+			t.group_id = #{groupId},
+			t.update_by = #{updateBy},
+			t.update_date = #{updateDate}
+		where t.id = #{id}
+		  AND t.org_id=#{orgId}
+	</update>
+
+	<update id="updateTempByItself" parameterType="java.lang.String">
+		update ${tableName} tp
+		set  tp.error_info = '重复的读者证号！'
+		where rowid !=
+		(select max(rowid) from ${tableName} b where tp.card = b.card)
+	</update>
+
+	<select id="findReaderInfoByCard" resultType="java.util.Map">
+		select t2.id as "readerId",
+			   t2.name as "readerName",
+			   t2.img as "img",
+			   t1.status as "status",
+			   t2.reader_type as "readerType",
+			   decode(t2.sex, 0, '男', 1, '女', t2.sex) as "sex",
+			   t3.name as "groupName",
+			   to_char(t1.end_date, 'yyyy-mm-dd') as "endDate",
+			   t1.deposit as "deposit",
+			   decode(t2.cert_type,
+					  1,
+					  '学生证',
+					  2,
+					  '身份证',
+					  3,
+					  '学籍证',
+					  t2.cert_type) as "certType",
+			   t2.cert_num as "certNum",
+			   t2.phone as "phone"
+		from circulate_card t1 inner join circulate_reader t2 on t1.reader_id = t2.id and t2.org_id=#{orgId}
+		left join circulate_group t3 on t2.group_id = t3.id and t3.org_id=#{orgId}
+		where t1.del_flag = '0' and t2.del_flag = '0' and t1.card=#{card} and t1.org_id=#{orgId} and rownum=1
+	</select>
+
+
+	<update id="updateCardImg" >
+		update circulate_card set card_img = #{cardImg} where reader_id=#{id} and org_id=#{orgId}
+	</update>
+</mapper>

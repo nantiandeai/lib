@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.GroupDao">
+    
+	<sql id="groupColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.group_type AS "groupType",
+		a.status AS "status",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="groupJoins">
+	</sql>
+    
+	<select id="get" resultType="Group">
+		SELECT 
+			<include refid="groupColumns"/>
+		FROM circulate_group a
+		<include refid="groupJoins"/>
+		WHERE a.id = #{id}
+		and a.del_flag = '0'
+	</select>
+	
+	<select id="findList" resultType="Group">
+		SELECT <include refid="groupColumns"/>,nvl(t2.groupNumber,0) groupNumber
+		FROM circulate_group a left join
+		(
+		select count(1) groupNumber, b.group_id
+		from circulate_READER b
+		inner join CIRCULATE_CARD c on (c.reader_id = b.id and c.del_flag = '0' AND
+        c.status in ('0', '2', '3','5') and b.org_id=c.org_id
+		<!--去掉集体统计-->
+		and b.reader_type != '3'
+		)
+		where b.del_flag = '0'
+		AND b.org_id = #{orgId}
+		group by b.group_id
+		) t2 on a.id = t2.group_id
+		<where>
+			a.del_flag = '0'
+			<if test="name != null and name != ''">
+				AND a.name LIKE '%'||#{name}||'%'
+			</if>
+			<if test="groupType != null and groupType != ''">
+				AND a.group_type = #{groupType}
+			</if>
+			<if test="status != null and status != ''">
+				AND a.status = #{status}
+			</if>
+			AND a.org_id = #{orgId}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Group">
+		SELECT 
+			<include refid="groupColumns"/>
+		FROM circulate_group a
+		<include refid="groupJoins"/>
+		<where>
+			a.del_flag = '0'
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="batchSave" parameterType="java.util.List">
+		BEGIN
+
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO circulate_group(
+			id,
+			org_id,
+			name,
+			group_type,
+			status,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+			) VALUES (
+			#{item.id},
+			#{item.orgId},
+			#{item.name},
+			#{item.groupType},
+			#{item.status},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.delFlag}
+			)
+		</foreach>
+		;END;
+	</insert>
+
+	<insert id="insert">
+		INSERT INTO circulate_group(
+			id,
+			org_id,
+			name,
+			group_type,
+			status,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{name},
+			#{groupType},
+			#{status},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+
+
+	<update id="update">
+		UPDATE circulate_group SET 	
+			name = #{name},update_date=#{updateDate}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE circulate_group SET 
+			del_flag = #{DEL_FLAG_DELETE},update_date=#{updateDate}
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</update>
+
+	<select id="isSameGroup" parameterType="Group" resultType="Integer" >
+		SELECT count(-1) from circulate_group t
+		where t.name = #{name} and t.del_flag = '0' and t.org_id=#{orgId}
+		<if test="id != null and id != ''">
+			and id!=#{id}
+		</if>
+	</select>
+
+	<select id="findCountByName" parameterType="string" resultType="Group">
+		select <include refid="groupColumns"/>
+		from circulate_group a
+		where a.del_flag = '0'
+		and a.name = #{groupName}
+		and a.org_id=#{orgId}
+	</select>
+
+	<select id="findReaderByGroup" parameterType="com.lianyitech.modules.circulate.entity.Group" resultType="com.lianyitech.modules.circulate.entity.Reader">
+		SELECT
+			a.id AS "id",
+			a.org_id AS "orgId",
+			a.group_id AS "groupId",
+			a.name AS "name",
+			a.email AS "email",
+			a.phone AS "phone",
+			a.cert_type AS "certType",
+			a.cert_num AS "certNum",
+			a.reader_type AS "readerType",
+			a.create_by AS "createBy",
+			a.create_date AS "createDate",
+			a.update_by AS "updateBy",
+			a.update_date AS "updateDate",
+			a.remarks AS "remarks",
+			a.del_flag AS "delFlag",
+			a.password AS "readerPassword"
+		from
+			circulate_reader a
+		INNER join circulate_group b on a.GROUP_ID = b.id
+		where
+		  a.del_flag = '0' and b.del_flag= '0' and a.org_id=#{orgId} and b.id = #{id}
+	</select>
+	<select id="findReaderByGroups" parameterType="com.lianyitech.modules.circulate.entity.Group" resultType="com.lianyitech.modules.circulate.entity.Reader">
+		SELECT
+		a.id AS "id",
+		c.card AS "card",
+		a.org_id AS "orgId",
+		a.group_id AS "groupId",
+		a.name AS "name",
+		a.email AS "email",
+		a.phone AS "phone",
+		a.cert_type AS "certType",
+		a.cert_num AS "certNum",
+		a.reader_type AS "readerType",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.password AS "readerPassword"
+		from circulate_reader a
+		INNER join circulate_group b on a.GROUP_ID = b.id
+		INNER JOIN circulate_card c on (c.reader_id = a.id and c.status!='4' and a.org_id=c.org_id)
+		where
+		b.id in (${id})
+		and a.del_flag = '0' and b.del_flag= '0' and a.org_id=#{orgId}
+	</select>
+
+	<select id="findAllGroup"   resultType="Group">
+		select id,name,org_id AS orgId,group_type AS groupType,status AS status
+		from circulate_group a
+		where a.del_flag = '0'
+	</select>
+
+	<update id="logOutGroup" parameterType="Group">
+		UPDATE circulate_group SET
+			status = #{DEL_FLAG_DELETE},update_date = #{updateDate}
+		WHERE id=#{id}
+	</update>
+	<!--批量注销组织-->
+	<update id="logOutGroups" parameterType="Group">
+		UPDATE circulate_group SET
+		status = #{DEL_FLAG_DELETE},update_date=#{updateDate}
+		WHERE id in (${id})
+	</update>
+</mapper>

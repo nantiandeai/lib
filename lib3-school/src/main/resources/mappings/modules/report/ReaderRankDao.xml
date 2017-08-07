@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.ReaderRankDao">
+    <!--读者借阅排行-->
+    <select id="findList" resultType="com.lianyitech.modules.report.entity.ReaderRank">
+        select tall.readerId,
+        tall2.readerName,
+        tall2.groupName,
+        tall2.readerType,
+        tall.borrowNum
+        from (select *
+        from (select t.reader_id readerId, count(t.bar_code) borrowNum
+        from CIRCULATE_BILL t, CIRCULATE_LOG l
+        where t.id = l.bill_id(+)
+        and t.org_id = l.org_id
+        and l.log_type = '0' and t.del_flag = '0' and l.del_flag = '0'
+        and t.org_id = #{orgId}
+        <if test="beginTime != null and beginTime != ''">
+        <![CDATA[
+          and t.create_date >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+        ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+        <![CDATA[
+          and t.create_date <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+        ]]>
+        </if>
+        group by t.reader_id
+        order by borrowNum desc)
+        <![CDATA[
+         where rownum <= 50
+        ]]>
+        ) tall,
+        (select r.id          readerId,
+        r.name        readerName,
+        g.name        groupName,
+        r.reader_type readerType
+        from CIRCULATE_READER r, CIRCULATE_GROUP g
+        where r.group_id = g.id(+)
+        and r.org_id = g.org_id
+        ) tall2
+        where tall.readerId = tall2.readerId(+)
+        <if test="readerType!=null and readerType!=''">
+          and tall2.readerType = #{readerType}
+        </if>
+        order by tall.borrowNum desc
+
+    </select>
+</mapper>

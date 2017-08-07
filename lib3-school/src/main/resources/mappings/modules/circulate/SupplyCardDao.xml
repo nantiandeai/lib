@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.SupplyCardDao">
+
+    <select id="findList" resultType="SupplyCard" parameterType="SupplyCard">
+        select  bq.id as id,
+                bq.org_id as orgId,
+                bq.card as card,
+                bq.name as name,
+                bq.GROUP_ID as groupId,
+                bq.group_name as groupName,
+                bq.sex as sex,
+                bq.STATUS as STATUS,
+                bq.create_by as createBy,
+                bq.create_date as createDate,
+                bq.del_flag as delFlag
+        from CATALOG_SUPPLY_CARD bq
+        <include refid="commonWhere"/>
+    </select>
+    <sql id="commonWhere">
+        where bq.del_flag = '0'
+        and to_char(bq.create_date, 'yyyy-mm-dd') = to_char(#{createDate}, 'yyyy-mm-dd')
+        and bq.org_id = #{orgId}
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}, bq.rowid
+            </when>
+            <otherwise>
+                order by bq.create_date desc, bq.rowid
+            </otherwise>
+        </choose>
+    </sql>
+    <!--打印读者证-->
+    <select id="findReaderList" resultType="Reader" parameterType="Reader">
+        SELECT
+        a.id,
+        bq.card as "card",
+        bq.name as "name",
+        a.sex as "sex",
+        a.img as "img",
+        c.card_img as cardImg
+        from CATALOG_SUPPLY_CARD bq
+        inner join CIRCULATE_CARD c on (bq.card = c.card and c.del_flag='0' and c.status!='4' AND c.org_id=#{orgId})
+        inner join circulate_reader a on (a.id = c.reader_id and a.del_flag='0' and a.org_id = #{orgId})
+        <include refid="commonWhere"/>
+    </select>
+    <!--添加-->
+    <insert id="insertFromReader">
+    insert into catalog_supply_card
+      (id,
+       org_id,
+       card,
+       name,
+       group_id,
+       group_name,
+       sex,
+       status,
+       create_by,
+       create_date,
+       update_by,
+       update_date,
+       del_flag)
+      SELECT #{id} as id,
+        #{orgId} as orgId,
+        c.card,
+        a.name,
+        b.id,
+        b.name,
+        a.sex,
+        c.status,
+        #{orgId},
+        #{createDate},
+        #{orgId},
+        #{updateDate},
+        '0'
+        FROM circulate_reader a
+        inner join CIRCULATE_GROUP b on (a.group_id = b.id and b.del_flag = '0' and
+        b.org_id = #{orgId})
+        inner join CIRCULATE_CARD c on (c.reader_id = a.id and
+        c.del_flag = '0' and c.status != '4' AND
+        c.org_id = #{orgId})
+        <where>
+        a.del_flag = '0'
+        <if test="card != null and card != ''">
+            AND (c.card = #{card} or a.name  =#{card})
+        </if>
+        </where>
+    </insert>
+    <update id="deleteAll" parameterType="SupplyCard"><!--只是临时保存的数据无须假删除-->
+        delete from  CATALOG_SUPPLY_CARD t
+        where  t.org_id = #{orgId}
+    </update>
+    <select id="getReader" parameterType="SupplyCard" resultType="SupplyCard">
+      SELECT c.status
+      FROM circulate_reader a
+      inner join CIRCULATE_CARD c on (c.reader_id = a.id and c.del_flag = '0' and c.status != '4' AND c.org_id = #{orgId})
+        where a.del_flag = '0'
+        <if test="card != null and card != ''">
+            AND (c.card = #{card} or a.name  =#{card})
+        </if>
+    </select>
+    <select id="getCount" resultType="Integer">
+      select count(1) from catalog_supply_card where DEL_FLAG='0'
+        and org_id = #{orgId}
+        <if test="card != null and card != ''">
+            AND (card = #{card} or name  =#{card})
+        </if>
+        and to_char(create_date, 'yyyy-mm-dd') = to_char(#{createDate}, 'yyyy-mm-dd')
+    </select>
+</mapper>

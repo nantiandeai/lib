@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.sys.dao.LibrarsortDao">
+    
+	<sql id="librarsortColumns">
+		a.id AS "id",
+		a.code AS "code",
+		a.name AS "name",
+		a.parent_code AS "parentCode",
+		a.sort AS "sort",
+		a.levels AS "levels",
+		a.isleaf AS "isleaf",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.subjects as "subjects"
+	</sql>
+	
+	<sql id="librarsortJoins">
+	</sql>
+    
+	<select id="get" resultType="Librarsort">
+		SELECT 
+			<include refid="librarsortColumns"/>
+		FROM sys_librarsort a
+		<include refid="librarsortJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="Librarsort">
+		SELECT 
+			<include refid="librarsortColumns"/>
+		FROM sys_librarsort a
+		<include refid="librarsortJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="name != null and name != ''">
+				AND a.name LIKE '%'||#{name}||'%'
+			</if>
+			<if test="code != null and code != ''">
+				AND a.code LIKE '%'||#{code}||'%'
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="Librarsort">
+		SELECT 
+			<include refid="librarsortColumns"/>
+		FROM sys_librarsort a
+		<include refid="librarsortJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+
+	<select id="findAll" resultType="Librarsort">
+		SELECT
+		code
+		FROM sys_librarsort a
+		<where>
+			a.del_flag = '0'
+		</where>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO sys_librarsort(
+			id,
+			code,
+			name,
+			parent_code,
+			sort,
+			levels,
+			isleaf,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{code},
+			#{name},
+			#{parentCode},
+			#{sort},
+			#{levels},
+			#{isleaf},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE sys_librarsort SET 	
+			code = #{code},
+			name = #{name},
+			parent_code = #{parentCode},
+			sort = #{sort},
+			levels = #{levels},
+			isleaf = #{isleaf},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE sys_librarsort SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id = #{id}
+	</update>
+	<!--根据分类号得到分类信息-->
+	<select id="findBySort" resultType="Librarsort">
+		SELECT
+		<include refid="librarsortColumns"/>
+		FROM sys_librarsort a
+		<include refid="librarsortJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="code != null and code != ''">
+				and a.code = #{code}
+			</if>
+		</where>
+	</select>
+</mapper>

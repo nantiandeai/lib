@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.BillDetailDao">
+
+    <sql id="billDetailColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.bill_id AS "billId",
+		a.copy_id AS "copyId",
+		a.isbn AS "isbn",
+		a.title AS "title",
+		a.sub_title AS "subTitle",
+		a.tied_title AS "tiedTitle",
+		a.part_name AS "partName",
+		a.part_num AS "partNum",
+		a.series_name AS "seriesName",
+		a.author AS "author",
+		a.sub_author AS "subAuthor",
+		a.series_editor AS "seriesEditor",
+		a.translator AS "translator",
+		a.press_id AS "pressId",
+		a.publishing_address AS "publishingAddress",
+		a.publishing_time AS "publishingTime",
+		a.librarsort_id AS "librarsortId",
+		a.librarsort_code AS "librarsortCode",
+		a.taneji_no AS "tanejiNo",
+		a.ass_no AS "assNo",
+		a.price AS "price",
+		a.edition AS "edition",
+		a.language AS "language",
+		a.measure AS "measure",
+		a.page_no AS "pageNo",
+		a.binding_form AS "bindingForm",
+		a.best_age AS "bestAge",
+		a.attachment_note AS "attachmentNote",
+		a.subject AS "subject",
+		a.content AS "content",
+		a.collection_site_id AS "collectionSiteId",
+		a.bar_code AS "barcode",
+		a.batch_no AS "batchNo",
+		a.status AS "status",
+		a.is_renew AS "isRenew",
+		a.is_stained AS "isStained",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.is_order AS "isOrder"
+	</sql>
+
+    <sql id="billDetailJoins">
+    </sql>
+
+
+    <select id="findList" resultType="BillDetail">
+        SELECT
+        <include refid="billDetailColumns"/>
+        FROM circulate_detail a
+        <include refid="billDetailJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            <if test="title != null and title != ''">
+                AND a.title LIKE '%'||#{title}||'%'
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert">
+		INSERT INTO circulate_detail(
+			id,
+			org_id,
+			bill_id,
+			copy_id,
+			isbn,
+			title,
+			sub_title,
+			tied_title,
+			part_name,
+			part_num,
+			series_name,
+			author,
+			sub_author,
+			series_editor,
+			translator,
+			press_id,
+			publishing_address,
+			publishing_time,
+			librarsort_id,
+			librarsort_code,
+			taneji_no,
+			ass_no,
+			price,
+			edition,
+			language,
+			measure,
+			page_no,
+			binding_form,
+			best_age,
+			attachment_note,
+			subject,
+			content,
+			collection_site_id,
+			bar_code,
+			batch_no,
+			status,
+			is_renew,
+			is_stained,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			is_order
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{billId},
+			#{copyId},
+			#{isbn},
+			#{title},
+			#{subTitle},
+			#{tiedTitle},
+			#{partName},
+			#{partNum},
+			#{seriesName},
+			#{author},
+			#{subAuthor},
+			#{seriesEditor},
+			#{translator},
+			#{pressId},
+			#{publishingAddress},
+			#{publishingTime},
+			#{librarsortId},
+			#{librarsortCode},
+			#{tanejiNo},
+			#{assNo},
+			#{price},
+			#{edition},
+			#{language},
+			#{measure},
+			#{pageNo},
+			#{bindingForm},
+			#{bestAge},
+			#{attachmentNote},
+			#{subject},
+			#{content},
+			#{collectionSiteId},
+			#{barcode},
+			#{batchNo},
+			#{status},
+			#{isRenew},
+			#{isStained},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{isOrder}
+		)
+	</insert>
+
+    <select id="countReaderBorrow" parameterType="Reader" resultType="Integer">
+		select
+      		count(b.copy_Id)
+   		from
+      		circulate_reader a
+      	left join circulate_bill b on b.reader_Id = a.id and b.bill_type!='1' and a.org_id=b.org_id
+    	where
+      		a.id= #{id}
+      	and b.del_flag = '0'
+      	and b.status in ('01','71')
+      	and a.org_id=#{orgId}
+	</select>
+
+    <select id="findReaderByCard" resultType="Reader" parameterType="ReaderCard">
+		SELECT *
+		from
+			circulate_reader a
+		where
+			a.cert_num = #{card} and a.org_id=#{orgId}
+	</select>
+    <select id="findBorrowByBill" resultType="com.lianyitech.modules.circulate.entity.ReaderUnionBook"
+            parameterType="Reader">
+		  select
+		     c.id as billDetailId,
+		     trunc(sysdate) - trunc(should_return_date) as pastDay,
+		     c.bar_code       as barcode,
+			 c.title              as title,
+			 b.borrow_date        as borrowDate,
+			 b.return_date        as returnDate,
+			 b.should_return_date as shouldReturnDate,
+			 c.status             as bookStatus,
+			 c.is_order           as isOrder,
+			 c.is_renew           as isRenew,
+			 c.librarsort_code    as librarsortCode,
+			 c.taneji_no          as tanejiNo,
+			 c.ass_no             as assNo
+          from circulate_reader a
+          inner join circulate_bill b on a.id = b.reader_id and b.bill_type!='1' and a.org_id=b.org_id
+          inner join circulate_detail c on c.bill_id = b.id
+         where a.id = #{id} and a.org_id=#{orgId}
+	</select>
+
+    <select id="findAllCirculate" parameterType="com.lianyitech.modules.circulate.entity.CirculateLogDTO"
+            resultType="com.lianyitech.modules.circulate.entity.CirculateLogDTO">
+        select
+			d.id as billDetailId,
+            a.card as readerCardId,
+            b.name as name,
+            d.bar_code as barcode,
+            d.title as title,
+            c.borrow_date as borrowDate,
+            c.return_date as returnDate,
+            c.should_return_date as shouldReturnDate,
+            c.bill_type as status,
+			b.group_id as groupId,
+			trunc(sysdate) - trunc(should_return_date) as pastDay
+        from circulate_bill c
+		inner join circulate_detail d on d.bill_id = c.id
+		inner join circulate_reader b on b.id = c.reader_id and c.org_id=b.org_id
+		inner join circulate_card a on b.cert_num = a.card and c.org_id=a.org_id
+        where 1=1
+        <if test="nameId != null and nameId != ''">
+            and a.card LIKE '%'||#{nameId}||'%' or b.name LIKE '%'||#{nameId}||'%'
+        </if>
+        <if test="barcodeTitle != null and barcodeTitle != ''">
+            and d.bar_code LIKE '%'||#{barcodeTitle}||'%' or d.title LIKE '%'||#{barcodeTitle}||'%'
+        </if>
+        <if test="status != null and status != ''">
+            and c.bill_type = #{status}
+        </if>
+        <if test="beginDate != null and beginDate != ''">
+            <![CDATA[and c.borrow_date>= #{beginDate}]]>
+        </if>
+        <if test="endDate != null and endDate != ''">
+            <![CDATA[and c.return_date<= #{endDate}]]>
+        </if>
+		<if test="pastDay != null and pastDay != ''">
+			<![CDATA[and trunc(sysdate) - trunc(c.should_return_date) >= #{pastDay}]]>
+			and c.bill_type!='1'
+		</if>
+		<if test="groupId != null and groupId != ''">
+			and b.group_id = #{groupId}
+		</if>
+		and c.org_id=#{orgId}
+		order by d.update_date desc
+
+    </select>
+
+
+	<insert id="create" parameterType="Map">
+		<selectKey keyProperty="detailId" resultType="String" order="BEFORE">
+			select sys_guid() from dual
+		</selectKey>
+		insert into circulate_detail
+		select #{detailId} id,
+			   #{orgID} org_id,
+			   #{billID} bill_id,
+			   c.id copy_id,
+			   isbn,
+			   title,
+			   sub_title,
+			   tied_title,
+			   part_name,
+			   part_num,
+			   series_name,
+			   author,
+			   sub_author,
+			   series_editor,
+			   translator,
+			   publishing_name,
+			   publishing_address,
+			   publishing_time,
+			   librarsort_id,
+			   librarsort_code,
+			   taneji_no,
+			   ass_no,
+			   price,
+			   edition,
+			   language,
+			   measure,
+			   page_no,
+			   binding_form,
+			   best_age,
+			   attachment_note,
+			   subject,
+			   content,
+			   collection_site_id,
+			   bar_code,
+			   batch_no,
+			   status,
+			   is_renew,
+			   is_stained,
+			   is_order,
+			   #{userID} create_by,
+			   sysdate create_date,
+			   #{userID}  update_by,
+			   sysdate update_date,
+			   '' remarks,
+			   '0' del_flag
+		  from catalog_copy c, catalog_book_directory d
+		 where c.book_directory_id = d.id
+		   and c.bar_code = #{barcode}
+	</insert>
+
+</mapper>

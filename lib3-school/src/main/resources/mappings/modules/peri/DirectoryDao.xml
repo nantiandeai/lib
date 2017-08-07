@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.peri.dao.DirectoryDao">
+
+	<sql id="directoryColumns">
+		a.id 			AS "id",
+		a.org_id 		AS "orgId",
+		a.issn 			AS "issn",
+		a.peri_num 		as "periNum",
+		a.email_num 	as "emailNum",
+		a.title 		AS "title",
+		a.sub_title 	AS "subTitle",
+		a.author 		AS "author",
+		a.press_id 		AS "pressId",
+		a.librarsort_id 	as "librarsortId",
+		a.librarsort_code as "librarsortCode",
+		a.publishing_name  as "publishingName",
+		a.price 		as "price",
+		a.book_size 	as "bookSize",
+		a.publishing_fre as "publishingFre",
+		a.LANGUAGE 		as "language",
+		a.lev 			as "lev",
+		a.peri_type		as "periType",
+		a.marc64		as "marc64",
+		a.create_by 	AS "createBy",
+		a.create_date 	AS "createDate",
+		a.update_by 	AS "updateBy",
+		a.update_date 	AS "updateDate",
+		a.remarks 		AS "remarks",
+		a.content       AS "content",
+		a.del_flag 		AS "delFlag"
+	</sql>
+
+	<select id="get" resultType="Directory">
+		SELECT
+		<include refid="directoryColumns"/>
+		FROM peri_directory a
+		WHERE a.id = #{id}
+	</select>
+
+	<!--这个保存是针对简单编目的数据信息千万不要对马克字段进行修改-->
+	<insert id="insert">
+		INSERT INTO peri_directory a(
+		a.id ,			
+		a.org_id 	,	
+		a.issn ,			
+		a.peri_num 	,	
+		a.email_num ,	
+		a.title 	,	
+		a.sub_title ,	
+		a.author 	,	
+		a.press_id 		,
+		a.librarsort_id 	,
+		a.librarsort_code ,
+		a.publishing_name ,
+		a.price 		,
+		a.book_size 	,
+		a.publishing_fre ,
+		a.LANGUAGE 		,
+		a.lev 			,
+		a.peri_type		,
+		a.marc64		,
+		a.create_by 	,
+		a.create_date 	,
+		a.update_by 	,
+		a.update_date 	,
+		a.remarks 		,
+		a.content       ,
+		a.del_flag
+		)VALUES (
+		#{id},
+		#{orgId},
+		#{issn},
+		#{periNum},
+		#{emailNum},
+		#{title},
+		#{subTitle},
+		#{author},
+		#{pressId},
+		#{librarsortId},
+		#{librarsortCode},
+		#{publishingName},
+		#{price},
+		#{bookSize},
+		#{publishingFre},
+		#{language},
+		#{lev},
+		#{periType},
+		#{marc64},
+		#{createBy},
+		#{createDate},
+		#{updateBy},
+		#{updateDate},
+		#{remarks},
+		#{content},
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE peri_directory a SET
+		a.id =#{id},
+		a.org_id 	=#{orgId},
+		a.issn =#{issn},
+		a.peri_num 	=#{periNum},
+		a.email_num =#{emailNum},
+		a.title 	=#{title},
+		a.sub_title =#{subTitle},
+		a.author 	=#{author},
+		a.press_id 		=#{pressId},
+		a.librarsort_id 	=#{librarsortId},
+		a.librarsort_code =#{librarsortCode},
+		a.publishing_name  =#{publishingName},
+		a.price 		=#{price},
+		a.book_size 	=#{bookSize},
+		a.publishing_fre =#{publishingFre},
+		a.LANGUAGE 		=#{language},
+		a.lev 			=#{lev},
+		a.peri_type		=#{periType},
+		a.marc64		=#{marc64},
+		a.update_by 	=#{updateBy},
+		a.update_date 	=#{updateDate},
+		a.remarks 		=#{remarks},
+		a.content       =#{content}
+		WHERE id = #{id}
+	</update>
+	<!---加个方法用来只修改马克数据的-->
+	<update id="updateMarc">
+		UPDATE peri_directory
+		SET marc64 = #{marc64},
+			update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	<update id="delete">
+		UPDATE peri_directory SET
+		del_flag = #{DEL_FLAG_DELETE},
+		update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+	<!--根据14个字段来查询馆藏书目表是否存在相同的记录 有所修改，就是数据库里面的数据万一存在null的情况则需要下面判断-->
+	<select id="getCountByCon"  parameterType="Directory" resultType="Integer">
+		SELECT
+		count(1)
+		FROM peri_directory a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<choose>
+				<when test="price != null">
+					and a.price = #{price}
+				</when>
+				<otherwise>
+					and a.price is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="subTitle != null and subTitle != ''">
+					and a.sub_title = #{subTitle}
+				</when>
+				<otherwise>
+					and a.sub_title is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="issn != null and issn != ''">
+					and a.issn = #{issn}
+				</when>
+				<otherwise>
+					and a.issn is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="title != null and title != ''">
+					and a.title = #{title}
+				</when>
+				<otherwise>
+					and a.title is null
+				</otherwise>
+			</choose>
+			<!--作者先不算14个字段中<choose>-->
+				<!--<when test="author != null and author != ''">-->
+					<!--and a.author = #{author}-->
+				<!--</when>-->
+				<!--<otherwise>-->
+					<!--and a.author is null-->
+				<!--</otherwise>-->
+			<!--</choose>-->
+			<choose>
+				<when test="publishingName != null and publishingName != ''">
+					and a.publishing_name = #{publishingName}
+				</when>
+				<otherwise>
+					and a.publishing_name is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="publishingFre != null and publishingFre != ''">
+					and a.publishing_fre = #{publishingFre}
+				</when>
+				<otherwise>
+					and a.publishing_fre is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="librarsortCode != null and librarsortCode != ''">
+					and a.librarsort_code = #{librarsortCode}
+				</when>
+				<otherwise>
+					and a.librarsort_code is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="periNum != null and periNum != ''">
+					and a.peri_num = #{periNum}
+				</when>
+				<otherwise>
+					and a.peri_num is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="emailNum != null and emailNum != ''">
+					and a.email_num = #{emailNum}
+				</when>
+				<otherwise>
+					and a.email_num is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="bookSize != null and bookSize != ''">
+					and a.book_size = #{bookSize}
+				</when>
+				<otherwise>
+					and a.book_size is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="language != null and language != ''">
+					and a.language = #{language}
+				</when>
+				<otherwise>
+					and a.language is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="lev != null and lev != ''">
+					and a.lev = #{lev}
+				</when>
+				<otherwise>
+					and a.lev is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="periType != null and periType != ''">
+					and a.peri_type = #{periType}
+				</when>
+				<otherwise>
+					and a.peri_type is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="content != null and content != ''">
+					and to_char(a.content) = #{content}
+				</when>
+				<otherwise>
+					and a.content is null
+				</otherwise>
+			</choose>
+
+			<if test="id != null and id != ''">
+				and a.id != #{id}
+			</if>
+			and a.org_id = #{orgId}
+		</where>
+	</select>
+
+	<select id="findList" resultType="Directory">
+		SELECT
+		<include refid="directoryColumns"/>
+		FROM peri_directory a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			AND a.org_id = #{orgId}
+			<if test="createBy != null and createBy != ''">
+				AND a.create_by LIKE '%'||#{createBy}||'%'
+			</if>
+			<if test="keyWord != null and keyWord != ''"><!--这里是组合查询-->
+				AND ((replace(a.issn,'-') = replace(#{keyWord},'-'))
+				OR a.title LIKE '%'||#{keyWord}||'%' OR a.peri_num LIKE '%'||#{keyWord}||'%' OR a.PUBLISHING_NAME LIKE '%'||#{keyWord}||'%')
+			</if>
+			<if test="id != null and id !=''">
+				AND a.id = #{id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findCountByOrder" resultType="Integer">
+		select count(-1)
+		from PERI_ORDER_DETAIL t
+		where t.order_id =
+		(select a.id
+		from peri_order a
+		where a.peri_directory_id = #{periId}
+		and a.del_flag = '0' and a.org_id = #{orgId})
+		and t.del_flag = '0'
+	</select>
+
+	<select id="findCountByBinding" resultType="Integer">
+		select count(-1)
+  		from peri_binding a
+ 		where a.peri_directory_id = #{periId}
+   		and a.del_flag = '0'
+		and a.org_id = #{orgId}
+	</select>
+
+	<select id="fiveClassRate" resultType="CirculateStatistics">
+		select
+			five.fiveclass,
+			five.fivename,
+			sum(tall.bookSpecies) bookSpecies,
+			sum(tall.bookNum) bookNum,
+			round(sum(tall.classPrice),2) classPrice
+		from sys_fiveclass five
+		left join (
+			select
+				count(1) bookNum,
+				count(distinct upper(d.librarsort_code)) bookSpecies,
+				sum(p.price) classPrice,
+				substr(upper(d.librarsort_code), 0, 1) sortcode
+			from peri_directory d
+			inner join PERI_BINDING p on (d.id=p.peri_directory_id and p.del_flag='0' and p.org_id = #{orgId})
+			where
+				d.del_flag='0'
+				<!-- 数据范围过滤-->
+				and d.org_id = #{orgId}
+				<if test="actionTime !=null and actionTime != ''">
+					<![CDATA[
+						and p.create_date  <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+						and p.create_date <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+					 ]]>
+				</if>
+				group by substr(upper(d.librarsort_code), 0, 1)
+		) tall on five.code = tall.sortcode
+		group by five.fiveclass, five.fivename
+		order by fiveClass
+	</select>
+
+	<select id="bookDistributeRate" resultType="CirculateStatistics">
+		select
+			t3.code classCode,
+			t3.name className,
+			nvl(bookSpecies,0) bookSpecies,
+			nvl(bookNum,0) bookNum,
+			round(nvl(classPrice,0),2) classPrice
+		from (select * from sys_librarsort sort where sort.levels = '1' and sort.del_flag='0') t3
+		left join (
+			select
+				count(1) bookNum,
+				count(distinct upper(d.librarsort_code)) bookSpecies,
+				sum(p.price) classPrice,
+				substr(upper(d.librarsort_code), 0, 1) sortcode
+			from peri_directory d
+			inner join PERI_BINDING p on (d.id=p.peri_directory_id and p.del_flag='0' and p.org_id = #{orgId})
+
+			where
+				d.del_flag='0'
+				<!-- 数据范围过滤-->
+				and d.org_id = #{orgId}
+				<if test="actionTime !=null and actionTime != ''">
+					<![CDATA[
+						and p.create_date  <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+						and p.create_date <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+					 ]]>
+				</if>
+			group by substr(upper(d.librarsort_code), 0, 1)
+		) t2 on t3.code = sortcode
+		<choose>
+			<when test="orderBy != null and orderBy != ''">
+				ORDER BY ${orderBy}
+			</when>
+			<otherwise>
+				order by t3.code
+			</otherwise>
+		</choose>
+
+	</select>
+</mapper>

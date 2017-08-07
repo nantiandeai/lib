@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.SupplyLableDao">
+
+    <select id="findList" resultType="SupplyLable" parameterType="SupplyLable">
+        select  a.id as id,
+                a.org_id as orgId,
+                a.type as type,
+                a.bar_code as barcode,
+                a.librarsort_code as librarsortCode,
+                a.taneji_no as tanejiNo,
+                a.ass_no as assNo,
+                a.book_no as bookNo,
+                a.book_time_no as bookTimeNo,
+                a.title_name as titleName,
+                a.put_date as putDate,
+                a.create_by as createBy,
+                a.create_date as createDate,
+                a.del_flag as delFlag
+        from CATALOG_SUPPLY_LABLE a
+        where a.del_flag = '0'
+              and to_char(a.create_date, 'yyyy-mm-dd') = to_char(sysdate, 'yyyy-mm-dd')
+              and a.type = #{type}
+              and a.org_id = #{orgId}
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}, a.rowid
+            </when>
+            <otherwise>
+                order by a.create_date desc, a.rowid
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert">
+        INSERT INTO CATALOG_SUPPLY_LABLE (
+        id,
+        org_id,
+        type,
+        bar_code,
+        librarsort_code,
+        taneji_no,
+        ass_no,
+        book_no,
+        book_time_no,
+        title_name,
+        put_date,
+        create_by,
+        create_date,
+        update_by,
+        update_date,
+        remarks,
+        del_flag
+        ) VALUES (
+        #{id},
+        #{orgId},
+        #{type},
+        #{barcode},
+        #{librarsortCode},
+        #{tanejiNo},
+        #{assNo},
+        #{bookNo},
+        #{bookTimeNo},
+        #{titleName},
+        #{putDate},
+        #{createBy},
+        #{createDate},
+        #{updateBy},
+        #{updateDate},
+        #{remarks},
+        #{delFlag}
+        )
+    </insert>
+
+    <update id="delete" parameterType="Map">
+        UPDATE CATALOG_SUPPLY_LABLE t
+        SET t.del_flag = #{DEL_FLAG_DELETE},t.update_date =#{updateDate}
+        WHERE t.id IN
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="deleteAll" parameterType="SupplyLable">
+        update CATALOG_SUPPLY_LABLE t
+        set t.del_flag = '1',t.update_date =#{updateDate}
+        where to_char(t.create_date, 'yyyy-mm-dd') =
+              to_char(sysdate, 'yyyy-mm-dd')
+              and t.org_id = #{orgId}
+              and t.type = #{type}
+    </update>
+
+</mapper>

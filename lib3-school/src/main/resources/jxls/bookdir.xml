@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<workbook>
+	<worksheet name="Sheet1">
+
+		<section startRow="0" endRow="0">
+			<mapping cell="A1">booklib.content</mapping>
+		</section>
+
+		<loop startRow="1" endRow="1" items="booklibs"
+			var="booklib" varType="com.lianyitech.modules.catalog.entity.BookDirectory">
+			<section startRow="1" endRow="1">
+				<mapping cell="A3">booklib.isbn</mapping>
+				<mapping cell="B3">booklib.title</mapping>
+				<mapping cell="C3">booklib.subTitle</mapping>
+				<mapping cell="D3">booklib.author</mapping>
+				<mapping cell="E3">booklib.subAuthor</mapping>
+				<mapping cell="F3">booklib.edition</mapping>
+				<mapping cell="G3">booklib.publishingAddress</mapping>
+				<mapping cell="H3">booklib.publishingName</mapping>
+				<mapping cell="I3">booklib.publishingTime</mapping>
+				<mapping cell="J3">booklib.unitprice</mapping>
+				<mapping cell="K3">booklib.barcode</mapping>
+				<mapping cell="L3">booklib.librarsortCode</mapping>
+				<mapping cell="M3">booklib.tanejiNo</mapping>
+				<mapping cell="N3">booklib.bookNo</mapping>
+				<mapping cell="O3">booklib.assNo</mapping>
+				<mapping cell="P3">booklib.collectionSiteName</mapping>
+				<mapping cell="Q3">booklib.measure</mapping>
+				<mapping cell="R3">booklib.pageNo</mapping>
+				<mapping cell="S3">booklib.bindingForm</mapping>
+				<mapping cell="T3">booklib.content</mapping>
+				<mapping cell="U3">booklib.bestAge</mapping>
+				<mapping cell="V3">booklib.purpose</mapping>
+				<mapping cell="W3">booklib.tiedTitle</mapping>
+				<mapping cell="X3">booklib.partName</mapping>
+				<mapping cell="Y3">booklib.partNum</mapping>
+				<mapping cell="Z3">booklib.seriesName</mapping>
+				<mapping cell="AA3">booklib.seriesEditor</mapping>
+				<mapping cell="AB3">booklib.translator</mapping>
+				<mapping cell="AC3">booklib.subject</mapping>
+				<mapping cell="AD3">booklib.language</mapping>
+				<mapping cell="AE3">booklib.attachmentNote</mapping>
+				<mapping cell="AF3">booklib.batchNo</mapping>
+
+			</section>
+			<loopbreakcondition>
+				<rowcheck offset="0">
+					<!--<cellcheck offset="500"></cellcheck>-->
+				</rowcheck>
+			</loopbreakcondition>
+		</loop>
+	</worksheet>
+</workbook>

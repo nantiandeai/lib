@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.GroupRankDao">
+    <!--读者借阅排行-->
+    <select id="findList" resultType="com.lianyitech.modules.report.entity.GroupRank">
+        select tall2.groupId,
+        tall2.groupName,
+        tall2.groupNumber,
+        tall2.groupType,
+        tall.borrowNum
+        from (select *
+        from (select t.group_id groupId, count(t.bar_code) borrowNum
+        from CIRCULATE_BILL t, CIRCULATE_LOG l
+        where t.id = l.bill_id(+)
+        and t.org_id = l.org_id
+        and l.log_type = '0' and t.del_flag = '0' and l.del_flag = '0'
+        and t.org_id = #{orgId}
+        <if test="beginTime != null and beginTime != ''">
+            <![CDATA[
+              and t.create_date >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+            ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            <![CDATA[
+              and t.create_date <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+            ]]>
+        </if>
+        group by t.group_id
+        order by borrowNum desc)
+        <![CDATA[
+         where rownum <= 50
+        ]]>
+        ) tall,
+        (select (select count(1)
+        from CIRCULATE_READER t
+        inner join CIRCULATE_CARD c on (c.reader_id = t.id and c.org_id = t.org_id and c.del_flag='0'
+        <!--去掉集体统计-->
+        and t.reader_type != '3'
+        and c.new_card is null)
+        where  t.del_flag = '0'
+        AND  t.group_id = a.id
+        and t.org_id = #{orgId}
+        ) as groupNumber,
+        a.id groupId,
+        a.name groupName,
+        a.group_type groupType
+        FROM CIRCULATE_GROUP a where a.del_flag = '0' and a.org_id = #{orgId}
+        ) tall2
+        where tall.groupId = tall2.groupId(+)
+
+        <if test="groupType != null and groupType != ''">
+          AND tall2.groupType = #{groupType}
+        </if>
+        order by tall.borrowNum desc
+
+    </select>
+</mapper>

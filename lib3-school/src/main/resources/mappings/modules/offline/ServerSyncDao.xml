@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.offline.dao.ServerSyncDao">
+    <select id="getList" resultType="ServerSync">
+        select  t.id         as "id",
+                t.org_id     as "orgId",
+                t.start_date as "startDate",
+                t.end_date   as "endDate",
+                t.type       as "type",
+                t.STATUS     as "status"
+                from server_sync t
+                where t.org_id = #{orgId}
+                <if test="type!=null and type!=''">
+                    and t.type = #{type}
+                </if>
+                <if test="status!=null and status!=''">
+                    and t.status = #{status}
+                </if>
+    </select>
+    <insert id="insert">
+        insert into SERVER_SYNC
+          (
+           id,
+           org_id,
+           START_DATE,
+           END_DATE,
+           STATUS,
+           TYPE,
+           create_date,
+           update_date
+           )
+        values
+          (#{id},#{orgId}, #{startDate},#{endDate}, #{status}, #{type},#{createDate},#{updateDate})
+    </insert>
+    <update id="update">
+        update SERVER_SYNC a set a.END_DATE=#{endDate},a.update_date=#{updateDate}
+        <if test="startDate!=null">
+        ,a.START_DATE=#{startDate}
+        </if>
+        <if test="status!=null and status!=''">
+            ,a.STATUS=#{status}
+        </if>
+        where a.org_id = #{orgId}
+        and a.TYPE = #{type}
+        <if test="id!=null and id!=''">
+        and a.id = #{id}
+        </if>
+    </update>
+    <delete id="delete">
+        delete SERVER_SYNC a where a.org_id = #{orgId}
+        <if test="type!=null and type!=''">
+            and a.type = #{type}
+        </if>
+    </delete>
+    <update id="updateDate">
+        update SERVER_SYNC a set a.START_DATE=#{startDate}
+        where a.org_id = #{orgId}
+        and a.TYPE = #{type}
+    </update>
+    <update id="updateStartDate">
+      update server_sync t
+      set t.start_date = #{startDate}
+      where t.org_id = #{orgId}
+      and t.type in (#{type})
+      and t.start_date > #{startDate}
+    </update>
+
+</mapper>

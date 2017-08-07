@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.CompenDao">
+    <sql id="columns">
+        a.id AS "id",
+        a.org_id AS "orgId",
+        a.reader_id AS "readerId",
+        a.READER_NAME AS "readerName",
+        a.READER_CARD AS "readerCard",
+        a.READER_GROUP AS "readerGroup",
+        a.BAR_CODE AS "barcode",
+        a.TITLE AS "title",
+        a.OP_TYPE AS "opType",
+        a.COMPEN_TYPE AS "compenType",
+        a.AMOUNT AS "amount",
+        a.NEW_BAR_CODE AS "newBarcode",
+        a.create_by AS "createBy",
+        a.create_date AS "createDate",
+        a.update_by AS "updateBy",
+        a.update_date AS "updateDate",
+        a.remarks AS "remarks"
+    </sql>
+
+    <sql id="whereSql">
+        <where>
+            a.org_id=#{orgId}
+            <if test="keywords1 != null and keywords1 != ''">
+                AND (a.READER_NAME like  '%'||#{keywords1}||'%' or a.READER_CARD like  '%'||#{keywords1}||'%')
+            </if>
+
+            <if test="readerGroup != null and readerGroup != ''">
+                AND a.reader_Group like  '%'||#{readerGroup}||'%'
+            </if>
+
+            <if test="keywords2 != null and keywords2 != ''">
+                AND (a.bar_code like  '%'||#{keywords2}||'%' or a.title like  '%'||#{keywords2}||'%')
+            </if>
+
+            <if test="opType != null and opType != ''">
+                AND a.op_type=#{opType}
+            </if>
+
+            <if test="compenType != null and compenType != ''">
+                AND a.compen_type=#{compenType}
+            </if>
+
+            <if test="startDate != null and startDate != ''">
+                <![CDATA[
+                AND a.CREATE_DATE>=to_date(#{startDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+                ]]>
+            </if>
+
+            <if test="endDate != null and endDate != ''">
+                <![CDATA[
+                  AND a.CREATE_DATE<=to_date(#{endDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+                ]]>
+            </if>
+
+            <if test="newBarcode != null and newBarcode != ''">
+                AND a.new_bar_code=#{newBarcode}
+            </if>
+
+            <if test="barcode != null and barcode != ''">
+                AND a.bar_code=#{barcode}
+            </if>
+
+            <if test="id != null and id != ''">
+                AND a.id!=#{id}
+            </if>
+        </where>
+    </sql>
+
+    <select id="get" resultType="CompenRecord">
+        SELECT
+        <include refid="columns"/>
+        FROM CIRCULATE_COMPEN_RECORD a
+        WHERE a.id = #{id}
+
+    </select>
+
+    <select id="findList" resultType="CompenRecord">
+         SELECT  <include refid="columns"/> FROM CIRCULATE_COMPEN_RECORD a
+        <include refid="whereSql"/> order by a.update_date desc
+    </select>
+
+    <insert id="insert" >
+        insert into CIRCULATE_COMPEN_RECORD(ID,READER_ID,READER_NAME,READER_CARD,READER_GROUP,BAR_CODE,TITLE,OP_TYPE,COMPEN_TYPE,AMOUNT,NEW_BAR_CODE,ORG_ID,CREATE_BY,CREATE_DATE,UPDATE_BY,UPDATE_DATE,REMARKS)
+        values(#{id},#{readerId},#{readerName},#{readerCard},#{readerGroup},#{barcode},#{title},#{opType},#{compenType},#{amount},#{newBarcode},#{orgId},#{createBy},#{createDate},#{updateBy},#{updateDate},#{remarks})
+    </insert>
+
+    <!--修改目前只考虑赔书关联条码-->
+    <insert id="update" >
+         update CIRCULATE_COMPEN_RECORD set NEW_BAR_CODE=#{newBarcode},update_by=#{updateBy},update_date=#{updateDate},remarks=#{remarks}
+         where id=#{id}
+    </insert>
+</mapper>

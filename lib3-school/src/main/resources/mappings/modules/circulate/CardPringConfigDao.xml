@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.CardPrintConfigDao">
+
+	<sql id="commonColumns" >
+
+	</sql>
+
+	<select id="get" resultType="CardPrintConfig">
+		select * from SYS_CARD_PRINT_CONFIG t where 1=1
+		<if test="orgId !=null and orgId != ''">
+			and t.org_id=#{orgId}
+		</if>
+		<choose>
+			<when test="orgId !=null and orgId != ''">
+				and t.org_id=#{orgId}
+			</when>
+			 <otherwise>
+				 and t.org_id is null
+			 </otherwise>
+		</choose>
+	</select>
+
+	<update id="update" >
+		update SYS_CARD_PRINT_CONFIG set
+		comp_name=#{compName},card_name=#{cardName},comp_font=#{compFont},
+		comp_font_size=#{compFontSize},card_font=#{cardFont},card_font_size=#{cardFontSize},
+		school_badge=#{schoolBadge},print_image=#{printImage},update_by=#{updateBy},update_date=#{updateDate}
+		where id = #{id}
+	</update>
+
+	<insert id="insert" >
+		insert into SYS_CARD_PRINT_CONFIG(id,org_id,comp_name,card_name,comp_font,comp_font_size,card_font,card_font_size,school_badge,print_image,CREATE_BY,CREATE_DATE,UPDATE_BY,UPDATE_DATE)
+		VALUES (#{id},#{orgId},#{compName},#{cardName},#{compFont},#{compFontSize},#{cardFont},#{cardFontSize},#{schoolBadge},#{printImage},#{createBy},#{createDate},#{updateBy},#{updateDate})
+	</insert>
+</mapper>

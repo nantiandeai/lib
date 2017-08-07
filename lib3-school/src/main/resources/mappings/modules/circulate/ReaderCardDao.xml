@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.ReaderCardDao">
+    
+	<sql id="readerCardColumns">
+		a.id AS "id",
+		a.reader_id AS "readerId",
+		a.status AS "status",
+		a.start_date AS "startDate",
+		a.end_date AS "endDate",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.card AS "card",
+		a.password AS "password",
+		a.org_id as "orgId",
+		a.deposit AS "deposit"
+	</sql>
+	
+	<sql id="readerCardJoins">
+	</sql>
+    
+	<select id="get" resultType="ReaderCard">
+		SELECT 
+			<include refid="readerCardColumns"/>
+		FROM circulate_card a
+		<include refid="readerCardJoins"/>
+		WHERE a.id = #{id} and a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id=#{orgId}
+	</select>
+	
+	<select id="findList" resultType="ReaderCard">
+		SELECT 
+			<include refid="readerCardColumns"/>
+		FROM circulate_card a
+		<include refid="readerCardJoins"/>
+        where a.del_flag = #{DEL_FLAG_NORMAL}
+		and a.status !='4'<!--旧证不查-->
+		and a.org_id#{orgId}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="ReaderCard">
+		SELECT
+			<include refid="readerCardColumns"/>
+		FROM circulate_card a
+		<include refid="readerCardJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.status!='4'
+			and a.org_id=#{orgId}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="batchSave" parameterType="java.util.List">
+		BEGIN
+
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO circulate_card(
+			id,
+			reader_id,
+			status,
+			start_date,
+			end_date,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			card,
+			password,
+			org_id
+			) VALUES (
+			#{item.id},
+			#{item.readerId},
+			#{item.status},
+			#{item.startDate},
+			#{item.endDate},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.delFlag},
+			#{item.card},
+			#{item.password},
+			#{item.orgId}
+			)
+		</foreach>
+		;END;
+	</insert>
+	
+	<insert id="insert">
+		INSERT INTO circulate_card(
+			id,
+			reader_id,
+			status,
+			start_date,
+			end_date,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			card,
+			password,
+			org_id
+		) VALUES (
+			#{id},
+			#{readerId},
+			#{status},
+			#{startDate},
+			#{endDate},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{card},
+			#{password},
+			#{orgId}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE circulate_card SET
+			status = #{status},
+			end_date = #{endDate},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE
+		status != '4' AND org_id=#{orgId} AND id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE circulate_card SET 
+			del_flag = #{DEL_FLAG_DELETE},update_date=#{updateDate}
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+		AND org_id=#{orgId}
+	</update>
+	<update id="deleteReaderCard" parameterType="ReaderCard">
+		UPDATE circulate_card SET
+		del_flag = #{DEL_FLAG_DELETE},update_date=#{updateDate}
+		WHERE id = #{id} and org_id=#{orgId}
+	</update>
+
+	<update id="updateCardStatus">
+		UPDATE circulate_card SET
+		status = #{cardStatus},update_date = #{updateDate}
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+		AND org_id=#{orgId}
+	</update>
+
+
+	<select id="findByCard" parameterType="ReaderCard" resultType="ReaderCard">
+		SELECT a.id          AS "id",
+			   a.reader_id   AS "readerId",
+			   a.status      AS "status",
+			   a.start_date  AS "startDate",
+			   a.end_date    AS "endDate",
+			   a.create_by   AS "createBy",
+			   a.create_date AS "createDate",
+			   a.update_by   AS "updateBy",
+			   a.update_date AS "updateDate",
+			   a.remarks     AS "remarks",
+			   a.del_flag    AS "delFlag",
+			   a.card        AS "card"
+		  FROM circulate_card a left join circulate_reader r on (a.reader_id = r.id and a.org_id=r.org_id)
+		 WHERE a.card = #{card }
+		   AND a.del_flag = '0'
+		   AND a.status!='4'
+		   AND r.del_flag = '0'
+		   AND r.org_id = #{orgId}
+	</select>
+
+	<select id="findByReaderId"  resultType="ReaderCard">
+		SELECT a.id          AS "id",
+		a.reader_id   AS "readerId",
+		a.status      AS "status",
+		a.start_date  AS "startDate",
+		a.end_date    AS "endDate",
+		a.create_by   AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by   AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks     AS "remarks",
+		a.del_flag    AS "delFlag",
+		a.card        AS "card"
+		FROM circulate_card a
+		WHERE a.reader_id = #{id}
+		AND a.del_flag = '0'
+		AND a.status!='4'
+		AND a.org_id=#{orgId}
+	</select>
+
+	<select id="findCountByCard" parameterType="Reader" resultType="Integer"><!--此查询公用地方比较多，改动时需要谨慎-->
+		select count(1) from (
+			select c.card as reader_card from circulate_card c  inner join circulate_reader r on c.reader_id = r.id AND r.org_id=c.org_id where c.card = #{card} and c.del_flag = '0'
+			AND r.del_flag = '0'
+			AND c.org_id = #{orgId}
+			<if test="id != null and id != ''"><!--不包含本条-->
+				AND r.id != #{id}
+			</if>
+			union
+			select bar_code as reader_card from catalog_copy where bar_code = #{card} and del_flag = '0' AND org_id = #{orgId}
+		)
+	</select>
+
+	<select id="findBarCode"  resultType="java.lang.String">
+		select c.card as barcode
+		from circulate_card c
+		inner join circulate_reader r
+		on (c.reader_id = r.id and r.del_flag = '0' and r.org_id=c.org_id)
+		where c.del_flag = '0'
+		and c.card = #{barcodeCard}
+		and r.org_id=#{orgId}
+		and c.org_id=#{orgId}
+		<if test="id != null and id != ''">
+			AND r.id != #{id}
+		</if>
+		union
+		select bar_code as barcode
+		from catalog_copy
+		where   del_flag = '0'
+		and bar_code = #{barcodeCard}
+		and org_id=#{orgId}
+		<if test="id != null and id != ''">
+			AND id != #{id}
+		</if>
+		union
+		select bar_code as barcode
+		from PERI_BINDING
+		where   del_flag = '0'
+		and bar_code = #{barcodeCard}
+		and org_id=#{orgId}
+		<if test="id != null and id != ''">
+			AND id != #{id}
+		</if>
+		union
+		select t.old_bar_code as barcode
+		from CATALOG_BARCODE_RECORD t
+		where t.del_flag = '0'
+		and t.old_bar_code = #{barcodeCard}
+		and t.org_id = #{orgId}
+		<if test="id != null and id != ''">
+			AND id != #{id}
+		</if>
+	</select>
+
+	<select id="findAll"  resultType="java.lang.String">
+		select c.card as barcode
+		from circulate_card c
+		inner join circulate_reader r
+		on (c.reader_id = r.id and r.del_flag = '0')
+		where c.del_flag = '0'
+		and r.org_id=#{orgId}
+		<if test="id != null and id != ''">
+			AND r.id != #{id}
+		</if>
+		union
+		select bar_code as barcode
+		from catalog_copy
+		where   del_flag = '0'
+		and org_id=#{orgId}
+		union
+		select bar_code as barcode
+		from PERI_BINDING
+		where   del_flag = '0'
+		and org_id=#{orgId}
+		<if test="id != null and id != ''">
+			AND id != #{id}
+		</if>
+		union
+		select t.old_bar_code as barcode
+		from CATALOG_BARCODE_RECORD t
+		where t.del_flag = '0'
+		and t.org_id = #{orgId}
+		<if test="id != null and id != ''">
+			AND t.id != #{id}
+		</if>
+	</select>
+
+	<update id="updateStatusToLoss" parameterType="ReaderCard">
+		update
+		circulate_card a
+		set
+		a.status = #{DEL_FLAG_AUDIT} ,update_date = #{updateDate}
+		where exists (select 1 from circulate_reader r
+		where r.id = a.reader_id
+		AND a.card = #{card}
+		AND a.status = #{DEL_FLAG_NORMAL}
+		AND a.del_flag = #{DEL_FLAG_NORMAL}
+		AND r.org_id = #{orgId}
+		)
+		AND a.org_id=#{orgId}
+	</update>
+
+	<update id="updateStatusRemoveLoss" parameterType="ReaderCard">
+		update circulate_card a
+   		set a.status = #{DEL_FLAG_NORMAL},update_date = #{updateDate}
+ 		where exists (select 1 from circulate_reader r
+         where r.id = a.reader_id
+           AND a.card = #{card}
+           AND a.status = #{DEL_FLAG_AUDIT}
+           AND a.del_flag = #{DEL_FLAG_NORMAL}
+           AND a.status != '4'
+		   AND r.org_id = #{orgId}
+		)
+		AND a.org_id=#{orgId}
+	</update>
+
+	<update id="updateInvalidLog" parameterType="ReaderCard">
+		 update circulate_bill t set  del_flag = #{DEL_FLAG_DELETE},update_date=sysdate where exists (
+			select a.*
+				from
+				  circulate_bill a
+							inner join circulate_reader b on a.reader_id = b.id and b.org_id=a.org_id
+							inner join circulate_card c on a.reader_id = c.reader_id and c.org_id=a.org_id
+						where a.reader_id = #{readerId}
+					  and a.id = t.id
+								and a.bill_type in ('1','3')
+								and a.del_flag = #{DEL_FLAG_NORMAL}
+								and b.del_flag = #{DEL_FLAG_NORMAL}
+								and c.del_flag=#{DEL_FLAG_NORMAL} AND a.org_id=#{orgId}) AND t.org_id=#{orgId}
+	</update>
+
+	<select id = "findReaderCardByCard" parameterType="ReaderCard" resultType="ReaderCard">
+		select * from
+		circulate_card a inner join circulate_reader r on a.reader_id = r.id and r.del_flag='0' AND  a.org_id=r.org_id
+		where a.card = #{card}
+		and a.del_flag = '0'
+		AND a.status!='4'
+		AND a.org_id = #{orgId}
+	</select>
+
+	<!--读者换证判断读者证新证是否唯一-->
+	<select id="findCountByNewCard" parameterType="Reader" resultType="Integer">
+		select count(1) from (
+		select c.card as reader_card from circulate_card c  inner join circulate_reader r on c.reader_id = r.id and r.org_id=c.org_id  where c.card = #{newCard} and c.del_flag = '0'
+		AND r.del_flag = #{DEL_FLAG_NORMAL} and c.del_flag=#{DEL_FLAG_NORMAL}
+		AND c.org_id = #{orgId}
+		union
+		select bar_code as reader_card from catalog_copy where bar_code = #{card} and del_flag = '0' AND org_id = #{orgId}
+		)
+	</select>
+
+	<select id="findRenewalPage" parameterType="Reader" resultType="Reader">
+	  select r.id,
+       t.create_date,
+       r.name,
+       g.name as "groupName",
+       r.reader_type,
+       t.card,
+       t.new_card as "newCard",
+	   t.UPDATE_DATE as "updateDate"
+     from circulate_reader r
+     join circulate_card t on t.reader_id = r.id and r.org_id=t.org_id
+     join circulate_group g on r.group_id = g.id
+		<where>
+       		t.status = '4'
+			AND t.del_flag = '0'
+
+			<if test="name != null and name != ''">
+				AND r.name like'%'||#{name}||'%'
+			</if>
+			<if test="card != null and card != ''">
+				AND (t.card like '%'||#{card}||'%' OR t.new_card like '%'||#{card}||'%')
+			</if>
+			<if test="groupName != null and groupName != ''">
+				AND g.name like '%'||#{groupName}||'%'
+			</if>
+			AND r.org_id=#{orgId}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY t.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	<update id="updateStatus" parameterType="CirculateDTO" >
+		update CIRCULATE_CARD t set t.status = #{status},update_date=#{updateDate} where t.card = #{card} and t.org_id = #{orgId}
+	</update>
+	<!--读者批量修改用到-->
+	<update id="updateEndDate" parameterType="ReaderCard">
+		update CIRCULATE_CARD t
+		set t.end_date = #{endDate},update_date = #{updateDate}
+		where t.id = #{id}
+		  and t.org_id = #{orgId}
+	</update>
+
+	<update id="updateDeposit">
+		update circulate_card set deposit = #{amount},update_date = #{updateDate} where card = #{card} and org_id = #{orgId}
+	</update>
+	
+	<select id="findAllOverdueReaderCard" resultType="ReaderCard">
+		select <include refid="readerCardColumns"/>
+		from circulate_card a
+		where
+		<![CDATA[a.end_date < sysdate]]>
+	    and a.del_flag = '0'
+	    and a.status = '0'
+	</select>
+
+	<update id="updateReaderCardOverdueStatus" parameterType="ReaderCard">
+		 update circulate_card t
+      	 set t.status = '3'
+    	 where t.org_id = #{orgId}
+         and t.id = #{id}
+	</update>
+
+</mapper>

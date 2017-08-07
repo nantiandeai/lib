@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.peri.dao.OrderDetailDao">
+
+    <sql id="OrderDetailColumns">
+
+    </sql>
+
+    <select id="findList" resultType="OrderDetail">
+        select a.id AS "id",
+        a.order_id AS "orderId",
+        a.peri_num AS "periNum",
+        a.order_amount AS "orderAmount",
+        a.arrive_amount AS "arriveAmount",
+        a.amount AS "amount",
+        a.collection_site_id AS "collectionSiteId",
+        a.create_by AS "createBy",
+        a.create_date AS "createDate",
+        a.update_by AS "updateBy",
+        a.update_date AS "updateDate",
+        a.remarks AS "remarks",
+        a.del_flag AS "delFlag",
+        a.seq AS "seq"
+        from PERI_ORDER_DETAIL a
+        where a.del_flag = '0'
+        <if test="periDirectoryId != null and periDirectoryId != ''">
+            AND a.collection_site_id = #{periDirectoryId}
+        </if>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="get" resultType="OrderDetail">
+        select a.id AS "id",
+               a.order_id AS "orderId",
+               a.peri_num AS "periNum",
+               a.order_amount AS "orderAmount",
+               a.arrive_amount AS "arriveAmount",
+               a.amount AS "amount",
+               a.collection_site_id AS "collectionSiteId",
+               a.create_by AS "createBy",
+               a.create_date AS "createDate",
+               a.update_by AS "updateBy",
+               a.update_date AS "updateDate",
+               a.remarks AS "remarks",
+               a.del_flag AS "delFlag",
+               a.seq AS "seq"
+        from PERI_ORDER_DETAIL a
+        where a.id = #{id}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO PERI_ORDER_DETAIL(
+        id,
+        order_id,
+        peri_num,
+        order_amount,
+        arrive_amount,
+        amount,
+        collection_site_id,
+        is_bound,
+        create_by,
+        create_date,
+        remarks,
+        del_flag,
+        seq
+        ) VALUES (
+        #{id},
+        #{orderId},
+        #{periNum},
+        #{orderAmount},
+        #{arriveAmount},
+        #{amount},
+        #{collectionSiteId},
+        #{isBound},
+        #{createBy},
+        #{createDate},
+        #{remarks},
+        #{delFlag},
+        #{seq}
+        )
+    </insert>
+
+    <insert id="addRemember">
+        INSERT INTO PERI_ORDER_DETAIL(
+        id,
+        order_id,
+        peri_num,
+        arrive_amount,
+        amount,
+        collection_site_id,
+        is_bound,
+        create_by,
+        create_date,
+        update_by,
+        update_date,
+        remarks,
+        del_flag,
+        seq
+        ) VALUES (
+        #{id},
+        #{orderId},
+        #{periNum},
+        #{arriveAmount},
+        #{amount},
+        #{collectionSiteId},
+        #{isBound},
+        #{createBy},
+        #{createDate},
+        #{updateBy},
+        #{updateDate},
+        #{remarks},
+        #{delFlag},
+        #{seq}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE PERI_ORDER_DETAIL
+        SET peri_num = #{periNum},
+        <if test="orderAmount != ''and orderAmount !=null">
+            a.order_amount = #{orderAmount},
+        </if>
+            arrive_amount = #{arriveAmount},
+            amount = #{arriveAmount},
+            collection_site_id = #{collectionSiteId},
+            update_by = #{updateBy},
+            update_date = #{updateDate},
+            remarks = #{remarks},
+            del_flag ='0'
+        WHERE id = #{id}
+    </update>
+
+    <update id="delete">
+        UPDATE PERI_ORDER_DETAIL
+        SET del_flag = '1',
+        update_date = #{updateDate}
+        WHERE order_id IN
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="deleteDetail">
+        UPDATE PERI_ORDER_DETAIL
+        SET del_flag = '1',
+        update_date = #{updateDate}
+        WHERE id IN
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!--根据书目id查询已记到期刊-->
+    <select id="findArriveOrderDetail" resultType="OrderDetail" parameterType="OrderDetail">
+        select  a.id                AS "id",
+                a.order_id           AS "orderId",
+                a.peri_num           AS "periNum",
+                a.order_amount       AS "orderAmount",
+                a.arrive_amount      AS "arriveAmount",
+                a.amount             AS "amount",
+                a.collection_site_id AS "collectionSiteId",
+                a.is_bound           AS "isBound",
+                a.create_by          AS "createBy",
+                a.create_date        AS "createDate",
+                a.update_by          AS "updateBy",
+                a.update_date        AS "updateDate",
+                a.remarks            AS "remarks",
+                a.del_flag           AS "delFlag",
+                a.seq                AS "seq",
+                b.publishing_year    AS "publishingYear",
+                b.peri_directory_id  AS "periDirectoryId",
+                c.name               AS "collectionSiteName",
+                d.title              AS "title",
+                d.librarsort_code    AS "librarsortCode"
+        from PERI_ORDER_DETAIL a
+        left join PERI_ORDER b
+        on (a.order_id = b.id and b.del_flag = '0' and b.org_id = #{orgId})
+        left join SYS_COLLECTION_SITE c
+        on (a.collection_site_id = c.id and c.del_flag = '0' and c.org_id = #{orgId})
+        left join PERI_DIRECTORY d
+        on (b.peri_directory_id = d.id and d.del_flag = '0' and d.org_id = #{orgId})
+        where a.del_flag = '0'
+        and a.order_id = #{orderId}
+        <if test="flag != '1'.toString()">
+            and a.amount > 0
+        </if>
+        <if test="periNum != '' and periNum != null">
+            and a.peri_num = #{periNum}
+        </if>
+        <choose>
+            <when test="publishingYearStart != null and publishingYearStart != '' and publishingYearEnd != null and publishingYearEnd != ''">
+                <![CDATA[
+                and b.publishing_year >= #{publishingYearStart}
+                and b.publishing_year <= #{publishingYearEnd}
+                ]]>
+            </when>
+            <when test="publishingYearStart != null and publishingYearStart != ''">
+                and b.publishing_year = #{publishingYearStart}
+            </when>
+            <when test="publishingYearEnd != null and publishingYearEnd != ''">
+                and b.publishing_year = #{publishingYearEnd}
+            </when>
+        </choose>
+        order by a.seq asc,a.order_amount asc, a.rowid
+    </select>
+
+    <!--判断是否能删除订单信息-->
+    <select id="checkDelete" parameterType="OrderDetail" resultType="OrderDetail">
+        select a.id AS "id",
+               a.order_id AS "orderId",
+               a.peri_num AS "periNum",
+               a.order_amount AS "orderAmount",
+               a.arrive_amount AS "arriveAmount",
+               a.amount AS "amount",
+               a.collection_site_id AS "collectionSiteId",
+               a.create_by AS "createBy",
+               a.create_date AS "createDate",
+               a.update_by AS "updateBy",
+               a.update_date AS "updateDate",
+               a.remarks AS "remarks",
+               a.del_flag AS "delFlag",
+               a.seq AS "seq"
+         from PERI_ORDER_DETAIL a
+        where a.arrive_amount > 0
+          and a.order_id = #{orderId}
+          and a.del_flag = '0'
+    </select>
+    
+    <!--期刊合订-->
+    <update id="bindingPeri" parameterType="java.util.Map">
+        update PERI_ORDER_DETAIL a
+           set a.amount = a.amount - 1,
+               is_bound = '1',
+               update_date = #{updateDate}
+         where a.arrive_amount>0
+         and a.id in
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!--批量取消期刊合订需要的参数-->
+    <select id="getBindingPeri" resultType="map">
+        select id, amount + bd.c c
+          from peri_order_detail od,
+               (select order_detail_id, count(1) c
+                  from PERI_BINDING_DETAIL a
+                 where a.BINDING_ID IN
+                    <foreach item="id" collection="idList" open="(" separator="," close=")">
+                        #{id}
+                    </foreach>
+                 group by order_detail_id) bd
+         where od.id = bd.order_detail_id
+    </select>
+    
+    <!--取消期刊合订-->
+    <update id="removeBindingPeri">
+        <foreach item="item" collection="list" separator="" open="begin" close="end;">
+            update PERI_ORDER_DETAIL a
+            set a.amount = #{item.C,jdbcType=DECIMAL},a.update_date = #{updateDate}
+            where a.id = #{item.ID,jdbcType=VARCHAR};
+        </foreach>
+    </update>
+
+</mapper>

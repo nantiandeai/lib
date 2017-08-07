@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.CirculateStatisticsDao">
+    <select id="findAllCirculateRate" resultType="CirculateStatistics">
+        select a.code classCode,
+        a.name className,
+        count(distinct c.bar_code) bookNum,
+        count(distinct d.bar_code) borrowNum
+        from (select code,name from sys_librarsort where levels = '1') a
+        left join catalog_book_directory b on (substr(b.librarsort_code,1,1) = a.code and b.del_flag = '0' and b.org_id = #{orgId})
+        left join (select copy.book_directory_id,copy.id,copy.bar_code from catalog_copy  copy where copy.status in ('0', '1', '2', '5','6') and copy.del_flag = '0' and copy.org_id = #{orgId}) c on c.book_directory_id = b.id
+        left join circulate_bill d on (d.copy_id = c.id and d.bill_type = '0' and d.del_flag = '0' and d.org_id = #{orgId} and d.dir_type=#{dirType}
+        <if test="startDate != null and startDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') >= #{startDate}
+            ]]>
+        </if>
+        <if test="endDate != null and endDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') <= #{endDate}
+            ]]>
+        </if>
+
+        )
+        group by a.code,a.name
+        order by a.code
+    </select>
+
+    <select id="findAllCirculateRatePeir" resultType="CirculateStatistics">
+        select a.code classCode,
+        a.name className,
+        count(distinct c.bar_code) bookNum,
+        count(distinct d.bar_code) borrowNum
+        from (select code, name from sys_librarsort where levels = '1') a
+        left join peri_directory b on (substr(b.librarsort_code, 1, 1) =
+        a.code and b.del_flag = '0' and
+        b.org_id = #{orgId})
+        left join (select peri.peri_directory_id, peri.id, peri.bar_code
+        from peri_binding peri
+        where peri.status in ('0', '1', '2', '5', '6')
+        and peri.del_flag = '0'
+        and peri.org_id = #{orgId}) c on c.peri_directory_id = b.id
+        left join circulate_bill d on (d.copy_id = c.id and d.bill_type = '0' and
+        d.del_flag = '0' and d.org_id = #{orgId} and d.dir_type=#{dirType}
+        <if test="startDate != null and startDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') >= #{startDate}
+            ]]>
+        </if>
+        <if test="endDate != null and endDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') <= #{endDate}
+            ]]>
+        </if>
+        )
+        group by a.code,a.name
+        order by a.code
+    </select>
+
+    <select id="totalCirculateRate" resultType="CirculateStatistics">
+        select count(distinct c.bar_code) totalBookNum,
+               count(distinct d.bar_code) totalBorrowNum
+          from catalog_book_directory b
+          left join (select copy.book_directory_id,copy.id,copy.bar_code from catalog_copy copy where copy.status in ('0', '1', '2', '5','6') and copy.del_flag = '0' and copy.org_id = #{orgId}) c on c.book_directory_id = b.id
+          left join circulate_bill d on (d.copy_id = c.id and d.bill_type = '0' and d.del_flag = '0' and d.org_id = #{orgId} and d.dir_type=#{dirType}
+        <if test="startDate != null and startDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') >= #{startDate}
+            ]]>
+        </if>
+        <if test="endDate != null and endDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') <= #{endDate}
+            ]]>
+        </if>
+                   )
+        where b.del_flag = '0' and b.org_id = #{orgId}
+    </select>
+
+    <select id="totalCirculateRatePeir" resultType="CirculateStatistics">
+        select count(distinct c.bar_code) totalBookNum,
+        count(distinct d.bar_code) totalBorrowNum
+        from peri_directory b
+        left join (select peri.peri_directory_id, peri.id, peri.bar_code
+        from peri_binding peri
+        where peri.status in ('0', '1', '2', '5', '6')
+        and peri.del_flag = '0'
+        and peri.org_id = #{orgId}) c on c.peri_directory_id = b.id
+        left join circulate_bill d on (d.copy_id = c.id and d.bill_type = '0' and
+        d.del_flag = '0' and d.org_id = #{orgId} and d.dir_type=#{dirType}
+        <if test="startDate != null and startDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') >= #{startDate}
+            ]]>
+        </if>
+        <if test="endDate != null and endDate != ''">
+            <![CDATA[
+                and to_char(d.borrow_date,'yyyy-MM-dd') <= #{endDate}
+            ]]>
+        </if>
+        )
+        where b.del_flag = '0' and b.org_id = #{orgId}
+    </select>
+
+
+    <select id="bookDistributeRate" resultType="CirculateStatistics">
+        select t3.code classCode, t3.name className,  bookSpecies, bookNum,classPrice
+        from (select * from sys_librarsort sort where sort.levels = '1') t3
+        left join (select count(copy.bar_code) bookNum,count(distinct upper(book.librarsort_code)) bookSpecies,sum(book.price) classPrice,substr(upper(book.librarsort_code), 0, 1) bookcode from catalog_copy copy
+        inner join catalog_book_directory book on (copy.book_directory_id = book.id and book.org_id = #{orgId})
+        where copy.org_id = #{orgId} and copy.del_flag = '0'and book.del_flag = '0'and copy.status in ('0', '1', '2', '5','6')
+        <if test="actionTime !=null and actionTime != ''">
+            <![CDATA[
+                and copy.create_date  <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+                and book.create_date <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+             ]]>
+        </if>
+        group by substr(upper(book.librarsort_code), 0, 1)) t2
+        on t3.code = bookcode
+        group by bookNum, bookSpecies, classPrice, t3.code, t3.name
+        order by t3.code
+    </select>
+
+    <select id="fiveClassRate" resultType="CirculateStatistics">
+        select five.fiveclass,five.fivename,sum(tall.bookSpecies) bookSpecies,sum(tall.bookNum) bookNum,sum(tall.classPrice) classPrice from  sys_fiveclass five
+        left join(select count(copy.bar_code) bookNum,count(distinct upper(book.librarsort_code)) bookSpecies,sum(book.price) classPrice,substr(upper(book.librarsort_code), 0, 1) sortcode
+        from catalog_copy copy inner join catalog_book_directory book on (copy.book_directory_id = book.id and book.org_id = #{orgId})
+        where copy.org_id = #{orgId} and copy.del_flag='0' and book.del_flag='0' and copy.status in ('0','1','2','5','6')
+        <if test="actionTime !=null and actionTime != ''">
+            <![CDATA[
+                and copy.create_date  <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+                and book.create_date <= to_date(#{actionTime}||'12-31','yyyy-MM-dd')
+             ]]>
+        </if>
+        group by substr(upper(book.librarsort_code), 0, 1)) tall on five.code = tall.sortcode
+        group by five.fiveclass,five.fivename
+        order by fiveClass
+    </select>
+
+</mapper>

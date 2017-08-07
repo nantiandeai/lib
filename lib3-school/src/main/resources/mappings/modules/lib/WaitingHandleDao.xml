@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.lib.dao.WaitingHandleDao">
+    
+	<sql id="waitingHandleColumns">
+		a.id AS "id",
+		a.name AS "name",
+		a.theme_describe AS "themeDescribe",
+		a.other_theme_describe AS "otherThemeDescribe",
+		a.waiting_type AS "waitingType",
+		a.user_type AS "userType",
+		a.deal_data AS "dealData",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+	
+	<sql id="waitingHandleJoins">
+	</sql>
+    
+	<select id="get" resultType="WaitingHandle">
+		SELECT 
+			<include refid="waitingHandleColumns"/>
+		FROM lib_waiting_handle a
+		<include refid="waitingHandleJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="WaitingHandle">
+		SELECT 
+			<include refid="waitingHandleColumns"/>
+		FROM lib_waiting_handle a
+		<include refid="waitingHandleJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="name != null and name != ''">
+				AND a.name LIKE '%'||#{name}||'%'
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="WaitingHandle">
+		SELECT 
+			<include refid="waitingHandleColumns"/>
+		FROM lib_waiting_handle a
+		<include refid="waitingHandleJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO lib_waiting_handle(
+			id,
+			name,
+			theme_describe,
+			other_theme_describe,
+			waiting_type,
+			user_type,
+			deal_data,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{name},
+			#{themeDescribe},
+			#{otherThemeDescribe},
+			#{waitingType},
+			#{userType},
+			#{dealData},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE lib_waiting_handle SET 	
+			name = #{name},
+			theme_describe = #{themeDescribe},
+			other_theme_describe = #{otherThemeDescribe},
+			waiting_type = #{waitingType},
+			user_type = #{userType},
+			deal_data = #{dealData},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE lib_waiting_handle SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</update>
+	
+</mapper>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.CollectBookStatisticsDao">
+    <!--读者借阅排行-->
+    <select id="findList" resultType="com.lianyitech.modules.report.entity.CollectBookStatistics">
+        select s.name            siteName,
+               s.id              siteId,
+               c.org_id          orgId,
+               c.bar_code        barcode,
+               d.librarsort_code librarsortCode,
+               d.librarsort_id   librarsortId,
+               d.taneji_no       tanejiNo,
+               d.ass_no          assNo,
+               d.isbn            isbn,
+               d.title           title,
+               d.author          author,
+               rownum
+        from CATALOG_COPY c
+        inner join CATALOG_BOOK_DIRECTORY d
+        on (c.book_directory_id = d.id and d.del_flag = '0' and d.org_id=#{orgId})
+        left join SYS_COLLECTION_SITE s
+        on (c.collection_site_id = s.id and s.del_flag = '0' and s.org_id=#{orgId})
+        <where>
+            c.org_id=#{orgId} and c.del_flag = '0'and c.status in('0', '1', '2', '5','6')
+            <if test="siteId != null and siteId != ''">
+                and s.id = #{siteId}
+            </if>
+            <if test="librarsortCode != null and librarsortCode != ''">
+                and d.librarsort_code like '%'||#{librarsortCode}||'%'
+            </if>
+        </where>
+            <choose>
+                <when test="orderBy != null and orderBy != ''">
+                    order by ${orderBy}
+                </when>
+                <otherwise>
+                    order by d.librarsort_code asc, c.bar_code desc
+                </otherwise>
+            </choose>
+    </select>
+
+    <!--藏书量分类统计专用导出-->
+    <select id="findListByPage" resultType="CollectBookStatistics">
+        select * from (select rownum rn,t1.* from (
+            select s.name as siteName,
+                s.id as siteId,
+                c.org_id as orgId,
+                c.bar_code as barcode,
+                d.librarsort_code as librarsortCode,
+                d.librarsort_id as librarsortId,
+                d.taneji_no as tanejiNo,
+                d.ass_no as assNo,
+                d.isbn as isbn,
+                d.title as title,
+                d.author as author,
+                rownum
+            from CATALOG_COPY c
+            inner join CATALOG_BOOK_DIRECTORY d on (c.book_directory_id = d.id and d.del_flag = '0' and d.org_id=#{orgId})
+            left join SYS_COLLECTION_SITE s on (c.collection_site_id = s.id and s.del_flag = '0' and s.org_id=#{orgId})
+            <where>
+                c.org_id=#{orgId} and c.del_flag = '0' and c.status in('0', '1', '2', '5','6')
+                <if test="siteId != null and siteId != ''">
+                    and s.id = #{siteId}
+                </if>
+                <if test="librarsortCode != null and librarsortCode != ''">
+                    and d.librarsort_code like '%'||#{librarsortCode}||'%'
+                </if>
+            </where>
+            <choose>
+                <when test="orderBy != null and orderBy != ''">
+                    order by ${orderBy}
+                </when>
+                <otherwise>
+                    order by d.librarsort_code asc, c.bar_code desc
+                </otherwise>
+            </choose>
+        <![CDATA[
+			) t1 where rownum<=#{pageSize} * #{pageNo} ) t2 where t2.rn>=((#{pageSize} * (#{pageNo} - 1 ))+1)
+		]]>
+    </select>
+</mapper>

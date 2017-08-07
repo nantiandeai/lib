@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.peri.dao.BindingDetailDao">
+
+    <!--添加binding明细-->
+    <insert id="addBindingDetail">
+        insert into
+        PERI_BINDING_DETAIL(order_detail_id,binding_id)
+        <foreach collection="list" item="item" separator="union all">
+            (
+            SELECT
+            #{item.orderDetailId,jdbcType=VARCHAR},
+            #{item.bindingId,jdbcType=VARCHAR}
+            FROM DUAL
+            )
+        </foreach>
+    </insert>
+
+    <!--根据bindingId批量删除binding明细-->
+    <delete id="delete" parameterType="Map">
+        delete from PERI_BINDING_DETAIL a where a.BINDING_ID IN
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,408 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.StatementsDao">
+    <select id="documentCirculate" resultType="Statements">
+        select tall1.barcode,
+        decode(tall1.dir_type,0,'图书',1,'期刊',tall1.dir_type) dirName,
+        <if test="dirType != null and dirType == '0'.toString() ">
+            tall2.title,
+            tall2.author,
+            tall2.publishingName,
+            tall2.publishingTime,
+        </if>
+        <if test="dirType != null and dirType == '1'.toString() ">
+            tall3.title,
+            tall3.author,
+            tall3.publishingName,
+            tall3.publishingTime,
+        </if>
+        tall1.borrow,
+        tall1.RENEW,
+        tall1.subscribe,
+        tall1.ORDERBORROW
+        from (select t.bar_code barcode,
+        t.dir_type,
+        count(decode(t.bill_type, '0', 1, null)) borrow,
+        sum(decode(t.is_renew, '1', 1, 0)) renew,
+        count(decode(t.bill_type, '3', 1, null)) subscribe,
+        count(decode(t.bill_type, '1', 1, null)) orderBorrow
+        from circulate_bill t
+        where 1=1
+        <if test="dirType != null  ">
+            and t.dir_type = #{dirType}
+        </if>
+        and t.del_flag = '0'
+        and t.org_id = #{orgId}
+        <if test="barcode!=null and barcode!=''">
+            and t.bar_code =#{barcode}
+        </if>
+        group by t.bar_code,t.dir_type) tall1,
+        <if test="dirType != null and dirType == '0'.toString() ">
+            (select t.id bookId,
+            copy.bar_code barcode,
+            t.title,
+            t.author,
+            t.publishing_name publishingName,
+            t.publishing_time publishingTime
+            from catalog_book_directory t, catalog_COPY copy
+            where copy.book_directory_id = t.id
+            and t.org_id = copy.org_id
+            and t.del_flag = '0'
+            and copy.del_flag = '0'
+            and t.org_id = #{orgId}
+            <if test="publishingTime!=null and publishingTime!=''">
+                and t.publishing_time like '%'||#{publishingTime}||'%'
+            </if>
+            <if test="publishingName!=null and publishingName!=''">
+                and t.publishing_name like '%'||#{publishingName}||'%'
+            </if>
+            <if test="title!=null and title!=''">
+                and t.title like '%'||#{title}||'%'
+            </if>
+            <if test="author!=null and author!=''">
+                and t.author like '%'||#{author}||'%'
+            </if>
+            <if test="barcode!=null and barcode!=''">
+                and copy.bar_code =#{barcode}
+            </if>
+            ) tall2
+            where tall2.barcode = tall1.barcode
+            and tall1.borrow > 0
+        </if>
+
+        <if test="dirType != null and dirType == '1'.toString() ">
+            (select b.id  periId,
+            a.bar_code barcode,
+            a.title,
+            b.author,
+            b.publishing_name publishingName,
+            a.publishing_year publishingTime
+            from  peri_binding a inner join peri_directory b
+            on a.peri_directory_id = b.id and a.org_id = b.org_id
+            and a.del_flag = '0' and b.del_flag= '0' and a.org_id = #{orgId}
+            <if test="publishingTime!=null and publishingTime!=''">
+                and a.publishing_year like '%'||#{publishingTime}||'%'
+            </if>
+            <if test="publishingName!=null and publishingName!=''">
+                and b.publishing_name like '%'||#{publishingName}||'%'
+            </if>
+            <if test="title!=null and title!=''">
+                and a.title like '%'||#{title}||'%'
+            </if>
+            <if test="author!=null and author!=''">
+                and b.author like '%'||#{author}||'%'
+            </if>
+            <if test="barcode!=null and barcode!=''">
+                and a.bar_code =#{barcode}
+            </if>
+            )tall3
+            where tall3.barcode = tall1.barcode
+            and tall1.borrow > 0
+        </if>
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                order by tall1.borrow desc
+            </otherwise>
+        </choose>
+    </select>
+    <select id="borrowingStatistics" resultType="Statements">
+        select tall3.certNum,
+        tall1.name,
+        tall1.readerType,
+        tall1.groupName,
+        tall2.borrow,
+        tall2.renew,
+        tall2.subscribe,
+        tall2.orderBorrow,
+        tall4.exceed,
+        tall5.compenCount
+        from (select distinct reader.id readerId,
+                              reader.name ,
+                              g.name groupName,
+                              reader.reader_type readerType
+              from circulate_reader reader,
+                   circulate_group  g,
+                   circulate_bill   t
+              where reader.group_id = g.id
+                and reader.org_id = g.org_id
+                and reader.id = t.reader_id
+                and reader.org_id = t.org_id
+                and t.org_id = #{orgId}
+                and t.bill_type in (0, 1, 3)
+                <if test="readerType!=null and readerType!=''">
+                    and reader.reader_type =#{readerType}
+                </if>
+                <if test="name!=null and name!=''">
+                    and reader.name like '%'||#{name}||'%'
+                </if>
+                <if test="groupName!=null and groupName!=''">
+                    and g.name =#{groupName}
+                </if>
+                <if test="beginTime != null and beginTime != ''">
+                    <![CDATA[
+                            and t.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+                         ]]>
+                </if>
+                <if test="endTime != null and endTime != ''">
+                    <![CDATA[
+                            and t.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+                         ]]>
+                </if>
+             ) tall1,
+        (select t.reader_id readerId,
+        count(decode(t.bill_type, '0', 1, null)) borrow,
+        count(decode(t.is_renew, '1', 1, null)) renew,
+        count(decode(t.bill_type, '3', 1, null)) subscribe,
+        count(decode(t.bill_type, '1', 1, null)) orderBorrow
+        from circulate_bill t
+        where  t.bill_type in (0,1,3)
+        and t.org_id = #{orgId}
+        <if test="beginTime != null and beginTime != ''">
+            <![CDATA[
+		       		and t.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            <![CDATA[
+		       		and t.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+        </if>
+
+        group by t.reader_id) tall2,
+        (select distinct t.reader_id readerId,
+        card.card  certNum
+        from circulate_bill t, circulate_reader reader,circulate_card card
+        where t.reader_id = reader.id(+)
+        and t.org_id = reader.org_id(+)
+        and reader.id = card.reader_id(+)
+        and reader.org_id = card.org_id(+)
+        and t.bill_type in (0,1,3)
+        and card.status != '4'
+        and t.org_id = #{orgId}
+
+        <if test="name!=null and name!=''">
+            and reader.name like '%'||#{name}||'%'
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            <![CDATA[
+		       		and t.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            <![CDATA[
+		       		and t.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+        </if>
+
+        ) tall3,
+        (select  t.reader_id readerId,
+        count(*) exceed from
+        circulate_bill t,circulate_reader reader
+        where t.reader_id = reader.id(+)
+        and t.org_id = reader.org_id(+)
+        and t.bill_type in (0,1,3)
+        <![CDATA[
+        and ( trunc(t.should_return_date,'dd') < trunc(t.return_date,'dd') )
+        ]]>
+        and t.org_id = #{orgId}
+        group by t.reader_id )tall4,
+        (select compen.reader_id readerId, count(*) compenCount
+        from circulate_compen_record compen, circulate_reader reader
+        where compen.reader_id = reader.id(+)
+        and compen.org_id = reader.org_id(+)
+        and compen.org_id = #{orgId}
+        group by compen.reader_id) tall5
+        where tall1.readerId = tall2.readerId(+)
+        <if test="certNum != null and certNum != '' ">
+            and tall3.certNum = #{certNum}
+        </if>
+        and tall1.readerId = tall3.readerId(+)
+        and tall1.readerId = tall4.readerId(+)
+        and tall1.readerId = tall5.readerId(+)
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                order by tall2.borrow desc
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="literature" resultType="Statements">
+        select
+        tall1.title,
+        <if test="dirType != null and dirType == '0'.toString() ">
+            tall2.author,
+            tall2.publishingname,
+            tall2.publishingtime,
+        </if>
+
+        <if test="dirType != null and dirType == '1'.toString() ">
+            tall3.author,
+            tall3.publishingname,
+            tall3.publishingtime,
+        </if>
+        tall1.borrow
+        from (select t.title,
+        t.dir_type,
+        count(decode(t.bill_type, '0', 1, null)) borrow
+        from circulate_bill t
+        where 1=1
+        and t.del_flag = '0'
+        and t.org_id = #{orgId}
+        and t.dir_type = #{dirType}
+        <if test="beginTime != null and beginTime != ''">
+            <![CDATA[
+		       		and t.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            <![CDATA[
+		       		and t.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+        </if>
+        group by t.title,t.dir_type) tall1,
+        <if test="dirType != null and dirType == '0'.toString() ">
+            (select
+            distinct(t.title),
+            t.author,
+            t.publishing_name publishingName,
+            t.publishing_time publishingTime
+            from catalog_book_directory t
+            where 1=1
+            and t.del_flag = '0'
+            and t.org_id = #{orgId}
+            ) tall2
+            where tall1.title = tall2.title(+)
+            and tall1.borrow > 0
+        </if>
+        <if test="dirType != null and dirType == '1'.toString() ">
+            (select a.title,
+            b.author,
+            b.publishing_name publishingName,
+            a.publishing_year publishingTime
+            from peri_binding a
+            inner join peri_directory b
+            on a.peri_directory_id = b.id
+            and a.org_id = b.org_id
+            and a.del_flag = '0'
+            and b.del_flag = '0'
+            and a.org_id = #{orgId}
+            <if test="publishingTime!=null and publishingTime!=''">
+                and a.publishing_year like '%'||#{publishingTime}||'%'
+            </if>
+            <if test="publishingName!=null and publishingName!=''">
+                and b.publishing_name like '%'||#{publishingName}||'%'
+            </if>
+            <if test="title!=null and title!=''">
+                and a.title like '%'||#{title}||'%'
+            </if>
+            <if test="author!=null and author!=''">
+                and b.author like '%'||#{author}||'%'
+            </if>
+            <if test="barcode!=null and barcode!=''">
+                and a.bar_code =#{barcode}
+            </if>
+            )tall3
+            where tall3.title = tall1.title
+            and tall1.borrow > 0
+        </if>
+        order by tall1.borrow desc
+    </select>
+
+    <select id="groupStatistics" resultType="Statements">
+        select tall1.groupName,
+        tall2.borrow,
+        tall2.renew,
+        tall2.subscribe,
+        tall2.orderBorrow,
+        tall4.exceed,
+        tall5.compenCount
+        from (select distinct g.id       groupId,
+                              g.name     groupName
+        from circulate_group g,circulate_reader reader,circulate_bill t
+        where g.id = reader.group_id
+        and g.org_id = reader.org_id
+        and g.id = t.group_id
+        and g.org_id = t.org_id
+        and g.org_id = #{orgId}
+        and t.bill_type in (0, 1, 3)
+        <if test="groupType!=null and groupType!=''">
+            and g.group_type =#{groupType}
+        </if>
+        <if test="groupName!=null and groupName!=''">
+            and g.name =#{groupName}
+        </if>
+        <if test="beginTime != null and beginTime != ''">
+            <![CDATA[
+                and t.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+            ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            <![CDATA[
+                and t.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+            ]]>
+        </if>
+        group by g.id,g.name) tall1,
+        (select t.group_id groupId,
+        count(decode(t.bill_type, '0', 1, null)) borrow,
+        count(decode(t.is_renew, '1', 1, null)) renew,
+        count(decode(t.bill_type, '3', 1, null)) subscribe,
+        count(decode(t.bill_type, '1', 1, null)) orderBorrow
+        from circulate_bill t
+        where t.bill_type in (0, 1, 3)
+        and t.org_id = #{orgId}
+        <if test="beginTime != null and beginTime != ''">
+            <![CDATA[
+		       	and t.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		    ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            <![CDATA[
+		       	and t.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		    ]]>
+        </if>
+        group by t.group_id) tall2,
+        (select t.group_id groupId, count(*) exceed
+        from circulate_bill t, circulate_reader reader
+        where t.reader_id = reader.id(+)
+        and t.org_id = reader.org_id(+)
+        and t.bill_type in (0, 1, 3)
+            <![CDATA[
+                and (trunc(t.should_return_date, 'dd') < trunc(t.return_date, 'dd'))
+            ]]>
+        and t.org_id = #{orgId}
+        <if test="beginTime != null and beginTime != ''">
+            <![CDATA[
+		       	and t.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		    ]]>
+        </if>
+        <if test="endTime != null and endTime != ''">
+            <![CDATA[
+		       	and t.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		    ]]>
+        </if>
+        group by t.group_id) tall4,
+        (select reader.group_id groupId, count(*) compenCount
+        from circulate_compen_record compen, circulate_reader reader
+        where compen.reader_id = reader.id(+)
+        and compen.org_id = reader.org_id(+)
+        and compen.org_id = #{orgId}
+        group by reader.group_id) tall5
+        where tall1.groupId = tall2.groupId(+)
+        and tall1.groupId = tall4.groupId(+)
+        and tall1.groupId = tall5.groupId(+)
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+            <otherwise>
+                order by tall2.borrow desc
+            </otherwise>
+        </choose>
+    </select>
+</mapper>

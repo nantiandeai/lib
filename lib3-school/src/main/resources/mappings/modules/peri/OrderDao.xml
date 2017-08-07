@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.peri.dao.OrderDao">
+    
+	<sql id="orderColumns">
+
+	</sql>
+
+	<select id="findList" resultType="Order">
+		select a.id AS "id",
+                a.org_id AS "orgId",
+                a.peri_directory_id AS "periDirectoryId",
+                a.publishing_year AS "publishingYear",
+                a.batch_no AS "batchNo",
+                a.start_time AS "startTime",
+                a.end_time AS "endTime",
+                a.order_peri AS "orderPeri",
+                a.order_amount AS "orderAmount",
+                a.total_price AS "totalPrice",
+                a.create_by AS "createBy",
+                a.create_date AS "createDate",
+                a.update_by AS "updateBy",
+                a.update_date AS "updateDate",
+                a.remarks AS "remarks",
+                a.del_flag AS "delFlag",
+                (select  case when count(-1)>0 then 1 else 0  end
+                    from PERI_ORDER_DETAIL t
+                    where t.order_id = a.id
+                    and t.arrive_amount > 0
+                    and t.del_flag = '0')as likeBoo
+		from PERI_ORDER a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<if test="periDirectoryId != null and periDirectoryId != ''">
+			AND a.peri_directory_id = #{periDirectoryId}
+		</if>
+		<!-- 数据范围过滤-->
+		and a.org_id = #{orgId}
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+    <!--查询机构下所有的订单（点击期刊记到）-->
+    <select id="findOrder" resultType="Order">
+        select a.id AS "id",
+        a.org_id AS "orgId",
+        a.peri_directory_id AS "periDirectoryId",
+        a.publishing_year AS "publishingYear",
+        a.batch_no AS "batchNo",
+        a.start_time AS "startTime",
+        a.end_time AS "endTime",
+        a.order_peri AS "orderPeri",
+        a.order_amount AS "orderAmount",
+        a.total_price AS "totalPrice",
+        a.create_by AS "createBy",
+        a.create_date AS "createDate",
+        a.update_by AS "updateBy",
+        a.update_date AS "updateDate",
+        a.remarks AS "remarks",
+        a.del_flag AS "delFlag",
+        b.ISSN AS "issn",
+        b.peri_num AS "periNum",
+        b.title AS "title",
+        b.author AS "author",
+        b.publishing_name as "publishingName",
+        b.publishing_fre AS "publishingFre",
+        b.email_num AS "emailNum"
+        from PERI_ORDER a
+        LEFT JOIN PERI_DIRECTORY b
+        ON (a.PERI_DIRECTORY_ID = b.ID and b.DEL_FLAG = '0' and b.org_id = #{orgId})
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            <!-- 数据范围过滤-->
+            and a.org_id = #{orgId}
+            <if test="publishingYear != null and publishingYear != ''">
+                AND a.publishing_year = #{publishingYear}
+            </if>
+            <if test="publishingName != null and publishingName != ''">
+                AND b.publishing_name like '%'||#{publishingName}||'%'
+            </if>
+            <if test="issn != null and issn != ''">
+                AND b.issn like '%'||#{issn}||'%'
+            </if>
+            <if test="title != null and title != ''">
+                AND b.title like '%'||#{title}||'%'
+            </if>
+            <if test="batchNo != null and batchNo != ''">
+                AND a.batch_no = #{batchNo}
+            </if>
+            <if test="periNum != null and periNum != ''">
+                AND b.peri_num like '%'||#{periNum}||'%'
+            </if>
+            <if test="author != null and author != ''">
+                AND b.author like '%'||#{author}||'%'
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <!--订购期数-->
+    <select id="orderPeri" parameterType="Order" resultType="java.lang.Integer">
+        select floor(((to_date(#{endTime},'yyyy-MM-dd')- to_date(#{startTime},'yyyy-MM-dd'))/365)*#{publishingFre}) from dual
+    </select>
+
+    <select id="orderPeriNum" parameterType="Order" resultType="Order">
+        select order_peri from peri_order a where a.id =#{id}  ${sqlMap.dsf}
+    </select>
+
+	<select id="get" resultType="Order">
+		select a.id AS "id",
+               a.org_id AS "orgId",
+               a.peri_directory_id AS "periDirectoryId",
+               a.publishing_year AS "publishingYear",
+               a.batch_no AS "batchNo",
+               a.start_time AS "startTime",
+               a.end_time AS "endTime",
+               a.order_peri AS "orderPeri",
+               a.order_amount AS "orderAmount",
+               a.total_price AS "totalPrice",
+               a.create_by AS "createBy",
+               a.create_date AS "createDate",
+               a.update_by AS "updateBy",
+               a.update_date AS "updateDate",
+               a.remarks AS "remarks",
+               a.del_flag AS "delFlag"
+		from PERI_ORDER a
+		where a.publishing_year = #{publishingYear}
+        <if test="periDirectoryId != null and periDirectoryId != ''">
+            AND a.peri_directory_id = #{periDirectoryId}
+        </if>
+        AND a.org_id = #{orgId}
+        and a.DEL_FLAG = '0'
+        <if test="id != null and id != ''">
+            AND a.id != #{id}
+        </if>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO PERI_ORDER(
+        id,
+        org_id,
+        peri_directory_id,
+        publishing_year,
+        batch_no,
+        start_time,
+        end_time,
+        order_peri,
+        order_amount,
+        total_price,
+        create_by,
+        create_date,
+        update_by,
+        update_date,
+        remarks,
+        del_flag
+        ) VALUES (
+        #{id},
+        #{orgId},
+        #{periDirectoryId},
+        #{publishingYear},
+        #{batchNo},
+        to_date(#{startTime},'yyyy-MM-dd'),
+        to_date(#{endTime},'yyyy-MM-dd'),
+        #{orderPeri},
+        #{orderAmount},
+        #{totalPrice},
+        #{createBy},
+        #{createDate},
+        #{updateBy},
+        #{updateDate},
+        #{remarks},
+        #{delFlag}
+        )
+	</insert>
+
+    <update id="update">
+        UPDATE PERI_ORDER
+        SET publishing_year = #{publishingYear},
+            batch_no = #{batchNo},
+            start_time = to_date(#{startTime},'yyyy-MM-dd'),
+            end_time = to_date(#{endTime},'yyyy-MM-dd'),
+            order_peri = #{orderPeri},
+            order_amount = #{orderAmount},
+            total_price = #{totalPrice},
+            update_by = #{updateBy},
+            update_date = #{updateDate},
+            remarks = #{remarks}
+        WHERE id = #{id}
+    </update>
+
+	<update id="delete">
+		UPDATE PERI_ORDER a
+		SET a.del_flag ='1',
+        update_date = #{updateDate}
+		WHERE a.id IN
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+	</update>
+
+    <!--查询已记到期刊书目-->
+    <select id="findArriveDirectory" parameterType="Order" resultType="Order">
+        select  a.id              as "id",
+                b.id              as "periDirectoryId",
+                b.issn            as "issn",
+                b.peri_num        as "periNum",
+                b.email_num       as "emailNum",
+                b.title           AS "title",
+                b.author          AS "author",
+                b.press_id        AS "pressId",
+                b.publishing_name as "publishingName",
+                b.publishing_fre  as "publishingFre"
+        from PERI_ORDER a
+        left join PERI_DIRECTORY b
+        on (a.peri_directory_id = b.id and b.del_flag = '0' and b.org_id = #{orgId})
+        where exists (select 1
+        from PERI_ORDER_DETAIL t1
+        where t1.arrive_amount > 0
+        and a.id = t1.order_id
+        and t1.del_flag = '0')
+        <!-- 数据范围过滤-->
+        and a.org_id = #{orgId}
+        <if test="title != null and title != ''">
+            AND b.title like '%'||#{title}||'%'
+        </if>
+        <if test="issn != null and issn != ''">
+            AND b.issn like '%'||#{issn}||'%'
+        </if>
+        <if test="periNum != null and periNum != ''">
+            AND b.peri_num like '%'||#{periNum}||'%'
+        </if>
+        <if test="publishingName != null and publishingName != ''">
+            AND b.publishing_name like '%'||#{publishingName}||'%'
+        </if>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+</mapper>

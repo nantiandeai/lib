@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.BookDirectoryCopyDao">
+    <!--复本统计公共sql-->
+    <sql id="copyStatCommonSql">
+        select
+        t.id bookId,
+        t.isbn,
+        t.librarsort_code librarsortCode,
+        t.taneji_no tanejiNo,
+        t.ass_no assNo,
+        t.title title,
+        t.author author,
+        t.publishing_name publishingName,
+        t.publishing_time publishingTime,
+        t.price price,
+        t.BOOK_NO bookNo,
+        count(a.bar_code) as bookNum
+        from catalog_book_directory t left join catalog_copy a on (a.book_directory_id = t.id  and a.org_id = #{orgId} and a.status in ('0','1','2','5','6'))
+        where t.org_id = #{orgId} and t.del_flag = '0' and a.del_flag = '0'
+        <if test="isbn != null and isbn != ''">
+            and t.isbn like '%'|| #{isbn}||'%'
+        </if>
+        <if test="title != null and title != ''">
+            and t.title like '%'|| #{title}||'%'
+        </if>
+        <if test="author != null and author != ''">
+            and t.author like '%'|| #{author}||'%'
+        </if>
+        <if test="publishingName != null and publishingName != ''">
+            and t.publishing_name like '%'|| #{publishingName}||'%'
+        </if>
+        <if test="librarsortCode != null and librarsortCode != ''">
+            and substr(t.librarsort_code,1,1) = #{librarsortCode}
+        </if>
+        <if test="publishingTime != null and publishingTime != ''">
+            and t.publishing_time like'%'||#{publishingTime}||'%'
+        </if>
+        group by t.id,t.isbn,t.librarsort_code,t.title ,t.author
+        ,t.publishing_name ,t.publishing_time,t.price,t.BOOK_NO,t.taneji_no ,t.ass_no
+        <if test="startBookNum != null and startBookNum != ''">
+            <![CDATA[
+              HAVING count(a.bar_code) >= #{startBookNum}
+            ]]>
+        </if>
+        <if test="startBookNum != null and startBookNum != '' and endBookNum != null and endBookNum != ''">
+            <![CDATA[
+              and count(a.bar_code) <= #{endBookNum}
+            ]]>
+        </if>
+        <if test="startBookNum == null and endBookNum != null and endBookNum != ''">
+            <![CDATA[
+              HAVING count(a.bar_code) <= #{endBookNum}
+            ]]>
+        </if>
+    </sql>
+
+    <!--复本统计查询-->
+    <select id="findAllDirectoryCopy" resultType="BookDirectoryCopy" parameterType="BookDirectoryCopy">
+        <include refid="copyStatCommonSql"/>
+        <choose>
+            <when test="orderBy != null and orderBy != ''">
+                ORDER BY ${orderBy}
+            </when>
+        <otherwise>
+                order by bookNum desc
+       </otherwise>
+        </choose>
+    </select>
+
+    <!--复本统计导出-->
+    <select id="findCopyStatForExport" resultType="BookDirectoryCopy" parameterType="BookDirectoryCopy">
+        select * from (select rownum rn,t1.* from (
+        <include refid="copyStatCommonSql"/>
+        <![CDATA[
+			) t1 where rownum<=#{pageSize} * #{pageNo} ) t2 where t2.rn>=((#{pageSize} * (#{pageNo} - 1 ))+1)
+		]]>
+    </select>
+
+    <select id="findCopyDetail" parameterType="BookDirectoryCopy" resultType="BookDirectoryCopy">
+        select b.bar_code barcode,
+               a.librarsort_code librarsortCode,
+               a.taneji_no tanejiNo,
+               a.BOOK_NO bookNo,
+               b.ass_no assNo,
+               d.batch_no batchNo,
+               c.name collectionName,
+               to_char(b.create_date, 'yyyy-mm-dd') putDate,
+               b.status status,
+                (select case
+                        when count(-1) > 0 then
+                            1
+                        else
+                            0
+                        end
+                 from CIRCULATE_BILL t
+                     left join circulate_log d
+                         on (t.id = d.bill_id and d.del_flag = '0')
+                 where t.bar_code = b.bar_code
+                       and t.org_id = b.org_id
+                       and d.log_type in ('0', '1', '2', '7', '8')
+                       and t.del_flag = '0') as likeBoo
+        from catalog_book_directory a
+            left join catalog_copy b
+                on (b.book_directory_id = a.id and b.del_flag = '0' and
+                    b.status in ('0', '1', '2', '5', '6') and b.org_id = #{orgId})
+            left join sys_collection_site c
+                on (b.collection_site_id = c.id and c.del_flag = '0' and
+                    c.org_id = #{orgId})
+            left join catalog_batch d
+                on (b.batch_id = d.id and d.del_flag = '0' and d.org_id = #{orgId})
+        where b.book_directory_id = #{bookId}
+              and a.del_flag = '0'
+              and a.org_id = #{orgId}
+    </select>
+
+    <select id="countCirculate" parameterType="BookDirectoryCopy" resultType="BookDirectoryCopy">
+        select copy.book_directory_id bookId,
+               count(decode(t.bill_type, '0', 1, null)) borrow,
+               sum(decode(t.is_renew, '1', 1, 0)) renew,
+               count(decode(t.bill_type, '3', 1, null)) subscribe,
+               count(decode(t.bill_type, '1', 1, null)) orderBorrow
+        from circulate_bill t,catalog_copy copy
+        where 1=1
+              and copy.book_directory_id=#{bookId}
+              and t.copy_id=copy.id
+              and t.del_flag = '0'
+              and t.org_id = #{orgId}
+        group by copy.book_directory_id
+    </select>
+</mapper>

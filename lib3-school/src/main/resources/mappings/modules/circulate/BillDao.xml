@@ -1,0 +1,1085 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.BillDao">
+
+	<sql id="billColumns">
+		a.id AS "id",
+		a.reader_id AS "readerId",
+		a.copy_id AS "copyId",
+		a.org_id AS "orgId",
+		a.group_id AS "groupId",
+		a.bill_type AS "billType",
+		a.bar_code AS "barcode",
+		a.batch_no AS "batchNo",
+		a.isbn AS "isbn",
+		a.librarsort_code AS "librarsortCode",
+		a.taneji_no AS "tanejiNo",
+		a.ass_no AS "assNo",
+		a.title AS "title",
+		a.is_stained AS "isStained",
+		a.is_renew AS "isRenew",
+		a.is_order AS "isOrder",
+		a.borrow_date AS "borrowDate",
+		a.should_return_date AS "shouldReturnDate",
+		a.return_date AS "returnDate",
+		a.reserve_date AS "reserveDate",
+		a.reserve_lose_date AS "reserveLoseDate",
+		a.status AS "status",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.recall_date AS "recallDate"
+	</sql>
+
+	<sql id="circulateColumns">
+		d.id as "id",
+		c.id as "billId",
+		a.card as "readerCardId",
+		b.name as "name",
+		c.bar_code as barcode,
+		c.title as "title",
+		book.price as "price",
+		to_char(to_timestamp(c.borrow_date), 'yyyy-mm-dd hh24:mi:ss') as "borrowDate",
+		to_char(to_timestamp(c.return_date), 'yyyy-mm-dd hh24:mi:ss') as "returnDate",
+		to_char(to_timestamp(c.should_return_date), 'yyyy-mm-dd hh24:mi:ss') as "shouldReturnDate",
+		d.log_type as "status",
+		t.id as "groupId",
+		t.name as "groupName",
+		trunc(sysdate) - trunc(c.should_return_date) as "pastDay",
+		d.create_date as "createDate",
+		c.org_id as "orgId",
+		d.source
+	</sql>
+
+	<sql id="circulateWhere">
+		<if test="keyWords != null and keyWords != '' and keyWords != 'null'">
+			AND (book.title like '%'||#{keyWords}||'%' or book.author like '%'||#{keyWords}||'%' or book.publishing_name like '%'||#{keyWords}||'%')
+		</if>
+		<if test="readerCardId != null and readerCardId != ''">
+			AND a.card=#{readerCardId}
+		</if>
+		<if test="logType != null and logType != ''">
+			AND d.log_type in (${logType})
+		</if>
+		<if test="nameId != null and nameId != ''">
+			and (a.card LIKE '%'||#{nameId}||'%' or b.name LIKE '%'||#{nameId}||'%')
+		</if>
+		<if test="barcodeTitle != null and barcodeTitle != ''">
+			and (c.bar_code LIKE '%'||#{barcodeTitle}||'%' or c.title LIKE '%'||#{barcodeTitle}||'%')
+		</if>
+		<if test="status != null and status != ''">
+			and trim(d.log_type) = #{status,jdbcType=CHAR}
+		</if>
+		<if test="beginDate != null">
+			<![CDATA[and d.CREATE_DATE>= #{beginDate}]]>
+		</if>
+		<if test="endDate != null">
+			<![CDATA[and d.CREATE_DATE<= #{endDate}]]>
+		</if>
+		<if test="pastDay != null ">
+			<choose>
+				<when test="pastDay != 0">
+					and trunc(sysdate) - trunc(c.should_return_date) = #{pastDay}
+				</when>
+				<otherwise>
+					<![CDATA[and trunc(sysdate) - trunc(c.should_return_date)> #{pastDay}]]>
+				</otherwise>
+			</choose>
+			and c.status in ('01')
+		</if>
+		<if test="groupId != null and groupId != ''">
+			and b.group_id = #{groupId}
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t.name  like '%'||#{groupName}||'%'
+		</if>
+	</sql>
+
+	<delete id="delete" parameterType="Bill">
+		DELETE FROM circulate_bill a where a.copy_id =#{copyId} AND a.status =#{status} and a.org_id=#{orgId}
+	</delete>
+    <select id="findList" resultType="Bill">
+        SELECT
+        <include refid="billColumns"/>
+        FROM circulate_bill a
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL} AND a.org_id=#{orgId}
+			<!-- 数据范围过滤-->
+
+        </where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO circulate_bill(
+		id,
+		reader_id,
+		copy_id,
+		org_id,
+		group_id,
+		bill_type,
+		bar_code,
+		batch_no,
+		isbn,
+		librarsort_code,
+		taneji_no,
+		ass_no,
+		title,
+		is_stained,
+		is_renew,
+		is_order,
+		borrow_date,
+		should_return_date,
+		return_date,
+		reserve_date,
+		reserve_lose_date,
+		status,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag,
+		recall_date
+		) VALUES (
+		#{id},
+		#{readerId},
+		#{copyId},
+		#{orgId},
+		#{groupId},
+		#{billType},
+		#{barcode},
+		#{batchNo},
+		#{isbn},
+		#{librarsortCode},
+		#{tanejiNo},
+		#{assNo},
+		#{title},
+		#{isStained},
+		#{isRenew},
+		#{isOrder},
+		#{borrowDate},
+		#{shouldReturnDate},
+		#{returnDate},
+		#{reserveDate},
+		#{reserveLoseDate},
+		#{status},
+		#{createBy},
+		#{createDate},
+		#{updateBy},
+		#{updateDate},
+		#{remarks},
+		#{delFlag},
+		#{recallDate}
+		)
+	</insert>
+	<update id="update">
+		UPDATE circulate_bill SET
+		reader_id = #{readerId},
+		copy_id = #{copyId},
+		group_id = #{groupId},
+		bill_type = #{billType},
+		bar_code = #{barcode},
+		batch_no = #{batchNo},
+		isbn = #{isbn},
+		librarsort_code = #{librarsortCode},
+		taneji_no = #{tanejiNo},
+		ass_no = #{assNo},
+		title = #{title},
+		is_stained = #{isStained},
+		is_renew = #{isRenew},
+		is_order = #{isOrder},
+		borrow_date = #{borrowDate},
+		should_return_date = #{shouldReturnDate},
+		return_date = #{returnDate},
+		reserve_date = #{reserveDate},
+		reserve_lose_date = #{reserveLoseDate},
+		status = #{status},
+		update_by = #{updateBy},
+		update_date = #{updateDate},
+		remarks = #{remarks},
+		recall_date = #{recallDate}
+		WHERE id = #{id}
+	</update>
+
+	<insert id="create" parameterType="map">
+		<selectKey keyProperty="billId" resultType="String" order="BEFORE">
+			select sys_guid() from dual
+		</selectKey>
+		INSERT INTO CIRCULATE_BILL
+		(id,dir_type,reader_id,group_id,borrow_date, should_return_date, return_date, reserve_date, reserve_lose_date, recall_date, copy_id, org_id, bill_type, bar_code, batch_no, isbn, librarsort_code, taneji_no, ass_no, title, sub_title, is_renew, is_order,is_stained, status, create_by, create_date, update_by, update_date, remarks, del_flag)
+		SELECT #{billId} id,#{dirType} dir_type,
+		<choose>
+			<when test="(card !=null and card != '') or (readerid !=null and readerid != '')">
+				a.reader_id,
+				r.group_id,
+				decode(#{type}, '0', #{createDate}) borrow_date,
+				decode(#{type}, '0', #{createDate} + l.borrow_days) should_return_date,
+				decode('', '1', #{createDate}) return_date,
+				decode(#{type}, '5', #{createDate},'6',#{createDate}) reserve_date,
+				<![CDATA[
+				decode(#{type},
+				'5', case when a.end_date<=#{createDate}+l.bespeaking_days then a.end_date else #{createDate}+l.bespeaking_days end,
+				'6', case when a.end_date<=#{createDate}+l.bespoke_days then a.end_date else #{createDate}+l.bespoke_days end)
+				]]> reserve_lose_date,
+				<!--decode(#{type}, '5', trunc(sysdate) + l.bespeaking_days,'6',trunc(sysdate) + l.bespoke_days) reserve_lose_date,-->
+				decode(#{type}, '0', #{createDate} + l.borrow_days - 3) recall_date,
+			</when>
+			<otherwise>
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+			</otherwise>
+		</choose>
+		c.id copy_id,
+		c.org_id,
+		#{billType} bill_type,
+		c.bar_code,
+		c.batch_no,
+		d.isbn,
+		d.librarsort_code,
+		d.taneji_no,
+		d.ass_no,
+		d.title,
+		d.sub_title,
+		c.is_renew,
+		c.is_order,
+		c.is_stained,
+		decode(#{type}, '0', '01', '6', '65', '3', '32', '5', '51', '7', '71', '8', '80','4', '43') status,
+		#{createBy} create_by,
+		#{createDate} create_date,
+		#{updateBy} update_by,
+		#{updateDate} update_date,
+		#{remarks} remarks,
+		'0' del_flag
+		FROM catalog_copy c, catalog_book_directory d
+		<if test="(card !=null and card != '') or (readerid !=null and readerid != '')">
+			,circulate_card a, circulate_reader r, circulate_rule l
+		</if>
+		where  c.book_directory_id = d.id
+		and c.org_id = d.org_id
+		and c.del_flag = '0'
+		and d.del_flag = '0'
+		<if test="(card !=null and card != '') or (readerid !=null and readerid != '')">
+			and a.reader_id = r.id
+			and r.org_id = c.org_id
+			and a.del_flag = '0' and r.del_flag='0'
+			AND a.status!='4'
+			and r.reader_type = l.reader_type
+			AND l.id = #{ruleId}
+			<if test="card !=null and card != ''">
+				and a.card = #{card}
+			</if>
+			<if test="readerid !=null and readerid != ''">
+				and a.READER_ID = #{readerid}
+			</if>
+		</if>
+		and c.bar_code = #{barcode}
+		and c.org_id = #{orgId}
+		and d.org_id=#{orgId}
+		and rownum=1<!--避免多条错误的情况-->
+	</insert>
+
+	<update id="modify">
+		update CIRCULATE_BILL t set (
+		reader_id,
+		group_id,
+		borrow_date,
+		should_return_date,
+		return_date,
+		reserve_date,
+		reserve_lose_date,
+		recall_date,
+		copy_id,
+		bar_code,
+		batch_no,
+		isbn,
+		librarsort_code,
+		taneji_no,
+		ass_no,
+		title,
+		is_renew,
+		is_order,
+		is_stained,
+		status,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) =( SELECT
+		<choose>
+			<when test="card !=null and card != ''">
+				a.reader_id,
+				r.group_id,
+				decode(#{type}, '0', #{updateDate},t.BORROW_DATE) borrow_date,
+				decode(#{type}, '0', #{updateDate} + l.borrow_days,'7',t.SHOULD_RETURN_DATE+l.renew_days,t.SHOULD_RETURN_DATE) should_return_date,
+				decode(#{type}, '1', #{updateDate},t.RETURN_DATE) return_date,
+				decode(#{type}, '5', #{updateDate},'6',#{updateDate},t.RESERVE_DATE) reserve_date,
+				<![CDATA[
+				decode(#{type},
+				'5', case when a.end_date<=#{updateDate}+l.bespeaking_days then a.end_date else #{updateDate}+l.bespeaking_days end,
+				'6', case when a.end_date<=#{updateDate}+l.bespoke_days then a.end_date else #{updateDate}+l.bespoke_days end)
+				]]> reserve_lose_date,
+				<!--decode(#{type}, '5', trunc(sysdate) + l.bespeaking_days,'6',trunc(sysdate) + l.bespoke_days) reserve_lose_date,-->
+				decode(#{type}, '0', #{updateDate} + l.borrow_days - 3,'7',t.recall_date+l.renew_days,t.recall_date) recall_date,
+			</when>
+			<otherwise>
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+			</otherwise>
+		</choose>
+		c.id copy_id,
+		c.bar_code,
+		c.batch_no,
+		d.isbn,
+		d.librarsort_code,
+		d.taneji_no,
+		d.ass_no,
+		d.title,
+		c.is_renew,
+		c.is_order,
+		c.is_stained,
+		decode(#{type}, '0','01','1', '10', '2', '24', '10', '100', '4', '43', '9', '91','7','71','8','86') status,
+		#{updateBy} update_by,
+		#{updateDate} update_date,
+		#{remarks} remarks,
+		'0' del_flag
+		FROM catalog_copy c,catalog_book_directory d
+		<if test="card !=null and card != ''">
+			,
+			circulate_card    a,
+			circulate_reader  r,
+			circulate_rule  l
+		</if>
+		where
+		c.book_directory_id = d.id
+		and c.org_id = d.org_id
+		and c.del_flag = '0'
+		and d.del_flag = '0'
+		<if test="card !=null and card != ''">
+			and a.card = #{card}
+			and a.del_flag = '0'
+			AND a.status!='4'
+			and r.del_flag = '0'
+			and r.id = a.reader_id
+			and r.reader_type = l.reader_type
+			and r.org_id = c.org_id
+			<if test="orgId !=null and orgId != ''">
+				and r.org_id = #{orgId} and  a.org_id = #{orgId}
+			</if>
+			AND l.id = #{ruleId}
+		</if>
+		<if test="orgId !=null and orgId != ''">
+			and c.org_id = #{orgId}
+		</if>
+		and c.bar_code = #{barcode}
+		and c.org_id = #{orgId} and d.org_id = #{orgId}
+		and rownum=1<!--避免多条错误的情况-->
+		) where id = #{billId}
+	</update>
+
+	<insert id="createPeri" parameterType="map">
+		<selectKey keyProperty="billId" resultType="String" order="BEFORE">
+			select sys_guid() from dual
+		</selectKey>
+		INSERT INTO CIRCULATE_BILL
+		(id,dir_type,reader_id,group_id,borrow_date, should_return_date, return_date, reserve_date, reserve_lose_date, recall_date, copy_id, org_id, bill_type, bar_code, isbn, librarsort_code, taneji_no, ass_no, title, sub_title, is_renew, is_order,is_stained, status, create_by, create_date, update_by, update_date, remarks, del_flag)
+		SELECT #{billId} id,#{dirType} dir_type,
+		<choose>
+			<when test="(card !=null and card != '') or (readerid !=null and readerid != '')">
+				a.reader_id,
+				r.group_id,
+				decode(#{type}, '0', sysdate) borrow_date,
+				decode(#{type}, '0', sysdate + l.borrow_days) should_return_date,
+				decode('', '1', sysdate) return_date,
+				decode(#{type}, '5', sysdate,'6',sysdate) reserve_date,
+				<![CDATA[
+				decode(#{type},
+				'5', case when a.end_date<=sysdate+l.bespeaking_days then a.end_date else sysdate+l.bespeaking_days end,
+				'6', case when a.end_date<=sysdate+l.bespoke_days then a.end_date else sysdate+l.bespoke_days end)
+				]]> reserve_lose_date,
+				<!--decode(#{type}, '5', trunc(sysdate) + l.bespeaking_days,'6',trunc(sysdate) + l.bespoke_days) reserve_lose_date,-->
+				decode(#{type}, '0', sysdate + l.borrow_days - 3) recall_date,
+			</when>
+			<otherwise>
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+			</otherwise>
+		</choose>
+		c.id copy_id,
+		c.org_id,
+		#{billType} bill_type,
+		c.bar_code,
+		d.issn,
+		d.librarsort_code,
+		c.book_time_no,
+		c.ass_no,
+		d.title,
+		d.sub_title,
+		c.is_renew,
+		c.is_order,
+		c.is_stained,
+		decode(#{type}, '0', '01', '6', '65', '3', '32', '5', '51', '7', '71', '8', '80') status,
+		#{createBy} create_by,
+		sysdate create_date,
+		#{updateBy} update_by,
+		sysdate update_date,
+		#{remarks} remarks,
+		'0' del_flag
+		FROM peri_binding c, peri_directory d
+		<if test="(card !=null and card != '') or (readerid !=null and readerid != '')">
+			,circulate_card a, circulate_reader r, circulate_rule l
+		</if>
+		where c.peri_directory_id = d.id
+		and c.org_id = d.org_id
+		and c.del_flag = '0'
+		and d.del_flag = '0'
+		<if test="(card !=null and card != '') or (readerid !=null and readerid != '')">
+			and a.reader_id = r.id
+			and r.org_id = c.org_id
+			and a.del_flag = '0' and r.del_flag='0'
+			AND a.status!='4'
+			and r.reader_type = l.reader_type
+			AND l.id = #{ruleId}
+			<if test="card !=null and card != ''">
+				and a.card = #{card}
+			</if>
+			<if test="readerid !=null and readerid != ''">
+				and a.READER_ID = #{readerid}
+			</if>
+		</if>
+		<if test="orgId !=null and orgId != ''">
+			and c.org_id = #{orgId}
+		</if>
+		and c.bar_code = #{barcode}
+		and rownum=1<!--避免多条错误的情况-->
+	</insert>
+
+	<update id="modifyPeri">
+		update CIRCULATE_BILL t set (
+		reader_id,
+		group_id,
+		borrow_date,
+		should_return_date,
+		return_date,
+		reserve_date,
+		reserve_lose_date,
+		recall_date,
+		copy_id,
+		bar_code,
+		isbn,
+		librarsort_code,
+		taneji_no,
+		ass_no,
+		title,
+		is_renew,
+		is_order,
+		is_stained,
+		status,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) =( SELECT
+		<choose>
+			<when test="card !=null and card != ''">
+				a.reader_id,
+				r.group_id,
+				decode(#{type}, '0', sysdate,t.BORROW_DATE) borrow_date,
+				decode(#{type}, '0', sysdate + l.borrow_days,'7',t.SHOULD_RETURN_DATE+l.renew_days,t.SHOULD_RETURN_DATE) should_return_date,
+				decode(#{type}, '1', sysdate,t.RETURN_DATE) return_date,
+				decode(#{type}, '5', sysdate,'6',sysdate,t.RESERVE_DATE) reserve_date,
+				<![CDATA[
+				decode(#{type},
+				'5', case when a.end_date<=sysdate+l.bespeaking_days then a.end_date else sysdate+l.bespeaking_days end,
+				'6', case when a.end_date<=sysdate+l.bespoke_days then a.end_date else sysdate+l.bespoke_days end)
+				]]> reserve_lose_date,
+				<!--decode(#{type}, '5', trunc(sysdate) + l.bespeaking_days,'6',trunc(sysdate) + l.bespoke_days) reserve_lose_date,-->
+				decode(#{type}, '0', sysdate + l.borrow_days - 3,'7',t.recall_date+l.renew_days,t.recall_date) recall_date,
+			</when>
+			<otherwise>
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+				null,
+			</otherwise>
+		</choose>
+		c.id copy_id,
+		c.bar_code,
+		d.issn,
+		d.librarsort_code,
+		c.book_time_no,
+		c.ass_no,
+		d.title,
+		c.is_renew,
+		c.is_order,
+		c.is_stained,
+		decode(#{type}, '0','01','1', '10', '2', '24', '10', '100', '4', '43', '9', '91','7','71') status,
+		#{updateBy} update_by,
+		sysdate update_date,
+		#{remarks} remarks,
+		'0' del_flag
+		FROM peri_binding c,peri_directory d
+		<if test="card !=null and card != ''">
+			,
+			circulate_card    a,
+			circulate_reader  r,
+			circulate_rule  l
+		</if>
+		where
+		c.peri_directory_id = d.id
+		and c.org_id = d.org_id
+		and c.del_flag = '0'
+		and d.del_flag = '0'
+		<if test="card !=null and card != ''">
+			and a.card = #{card}
+			and a.del_flag = '0'
+			AND a.status!='4'
+			and r.del_flag = '0'
+			and r.id = a.reader_id
+			and r.reader_type = l.reader_type
+			and r.org_id = c.org_id
+			AND l.id = #{ruleId}
+			and r.org_id = #{orgId}
+			and  a.org_id = #{orgId}
+		</if>
+		and c.bar_code = #{barcode}
+		and c.org_id = #{orgId} and d.org_id = #{orgId}
+		and rownum=1<!--避免多条错误的情况-->
+		) where id = #{billId}  and org_id=#{orgId}
+	</update>
+
+	<update id="modifyBill">
+		update CIRCULATE_BILL t set t.id = t.id ,t.UPDATE_DATE = #{updateDate}
+		<if test="status != null and status != ''">
+			,t.status = #{status}
+		</if>
+		<if test="renewDays != null and renewDays != ''"><!--将应还日期加上续借天数，将催还日期加上续借天数-->
+			,t.SHOULD_RETURN_DATE = t.SHOULD_RETURN_DATE + #{renewDays},
+			t.RECALL_DATE = t.RECALL_DATE + #{renewDays}
+		</if>
+		<if test="isRenew != null and isRenew != ''">
+			,t.is_renew = #{isRenew}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			,t.update_by = #{updateBy}
+		</if> 
+		where id = #{id} and org_id=#{orgId}
+	</update>
+
+	<insert id="createlog" parameterType="map">
+		<selectKey keyProperty="id" resultType="String" order="BEFORE">
+			select sys_guid() from dual
+		</selectKey>
+		insert into CIRCULATE_LOG (id,BILL_ID,LOG_TYPE,CREATE_BY,CREATE_DATE,UPDATE_BY,UPDATE_DATE,REMARKS,DEL_FLAG,ORG_ID)
+		values(#{id},#{billId},#{logType},#{createBy},#{createDate},#{updateBy},#{updateDate},'','0',#{orgId})
+	</insert>
+
+    <select id="findBookByBarCode" parameterType="Copy" resultType="Map">
+		select * from (
+		select t1.id as copyId,
+		t1.status,
+		t2.title,
+		t2.isbn,
+		nvl(t2.sub_title,'') as subTitle,
+		t1.bar_code,
+		t2.author,
+		t2.librarsort_code as librarsortCode,
+		t2.taneji_no as tanejiNo,
+		t2.ass_no as assNo,
+		t2.publishing_name as publishingName,
+		t2.price,
+		rownum rwn
+		from catalog_copy t1
+		inner join catalog_book_directory t2 on (t1.book_directory_id = t2.id  and t2.del_flag='0' and t2.org_id=#{orgId})
+		where t1.bar_code =#{barcode}
+		and t1.del_flag='0'
+		and t1.org_id=#{orgId}
+		) where rwn = 1
+    </select>
+    
+    <select id="findCode" resultType="Map">
+		select * from (
+        select t3.id as readerId, t3.card readerCard,rownum rwn
+        from circulate_bill t1
+        inner join circulate_card t3 on (t1.reader_id = t3.reader_id AND t3.del_flag='0' AND t3.status!='4' AND t3.org_id=#{orgId} )
+        where t1.copy_id =#{copyId} AND  t1.status in ('01','71') AND t1.org_id=#{orgId}
+        ) where rwn=1
+    </select>
+    
+	<select id="findReaderInfo" resultType="Map">
+		select t2.id as "readerId", t2.card "readerCard" from circulate_bill t1 inner join circulate_card t2
+		on (t1.reader_id = t2.reader_id and t2.del_flag='0' and t2.status!='4' )
+		where t1.copy_id = #{copyId} and t1.org_id = #{orgId} and t2.org_id = #{orgId} and t1.status in ('01','71','24')
+	</select>
+
+	<select id="findLastByTypeAndBarCode" parameterType="Map">
+		select
+		<include refid="billColumns"/>
+		from circulate_bill a
+		where a.bill_type = #{type}
+		and exists (select 1
+		from circulate_detail b
+		where a.id = b.bill_id
+		and b.bar_code = #{barcode})
+		and rownum = 1
+		order by a.create_date desc
+	</select>
+
+	<select id="findLastByCon" parameterType="com.lianyitech.modules.circulate.entity.CirculateDTO" resultType="Bill">
+		select * from (
+		select
+		<include refid="billColumns"/>
+		,r.name readerName
+		,d.name groupName
+		,rownum rwn
+		FROM circulate_bill a
+		left join CIRCULATE_card c on (a.reader_id = c.reader_id AND c.del_flag='0' AND c.status!= '4' AND c.org_id=#{orgId})
+		left join Circulate_Reader r on  (c.reader_id = r.id AND r.del_flag='0' AND r.org_id=#{orgId})
+		left join circulate_group d on r.group_id=d.id
+		WHERE a.del_flag='0'
+		<if test="card != null and card != ''">
+			AND c.card = #{card}
+		</if>
+	
+		AND a.bar_code = #{barcode}
+		<if test="billType != null and billType != ''">
+			AND a.bill_type = #{billType}
+		</if>
+		<if test="status != null and status != ''">
+			AND a.status in (${status})
+		</if>
+		<if test="billId != null and billId != ''">
+			AND a.id=#{billId}
+		</if>
+		AND a.org_id = #{orgId}
+		ORDER BY a.create_date DESC
+		) where rownum=1
+	</select>
+
+	<select id="findOverduePreBorrow" resultType="com.lianyitech.modules.circulate.entity.CirculateDTO">
+		select
+		b.id as billId,
+		c.card as card,
+		b.bar_code as barcode,
+		b.bill_type as billType,
+		b.status as status,
+		r.id as readerid,
+		b.org_id as orgId,
+		b.*
+		from circulate_bill b, circulate_reader r, circulate_card c
+		where b.reader_id = r.id
+		and r.id = c.reader_id
+		and c.status != '4'
+		and b.del_flag = '0'
+		and r.del_flag = '0'
+		and c.del_flag = '0'
+		and b.status in ('51', '65')
+		and trunc(sysdate)>trunc(b.reserve_lose_date)
+			and b.org_id=#{orgId}
+			and c.org_id=#{orgId}
+			and r.org_id=#{orgId}
+	</select>
+
+	<select id="findRecallorOverdue" resultType="com.lianyitech.modules.circulate.entity.BillOverdueRecall">
+		select t1.id as billId,
+		t1.bill_type as billType,
+		t1.reader_id as readerId,
+		t1.bar_code as barcode,
+		sysdate as sysNowDate,
+		t1.should_return_date as shouldReturnDate,
+		t1.recall_date as recallDate,
+		t1.title as title,
+		t1.org_id as orgId,
+		t2.name as readerName
+		from circulate_bill t1
+		inner join circulate_reader t2 on (t1.reader_id = t2.id and t2.org_id=t1.org_id)
+		where
+		t1.del_flag = 0
+		and t1.status in ('01','71')
+		and trunc(sysdate) - trunc(t1.recall_date) >= 0
+		and t1.org_id=#{orgId} and t2.org_id=#{orgId}
+	</select>
+
+	<update id="updateRecallDate">
+		update  circulate_bill
+		set recall_date =
+		(case
+		<![CDATA[
+				 when recall_date is null or recall_date='' then should_return_date+7
+				 when should_return_date = recall_date then should_return_date+7
+				 when should_return_date > recall_date then should_return_date
+				 else recall_date+7
+				]]>
+			end)
+		where id = #{billId} and org_id=#{orgId}
+	</update>
+
+	<select id="findCirculateLogByReader" parameterType="Reader" resultType="Bill">
+		SELECT
+		<include refid="billColumns"/>
+		FROM circulate_bill a
+		inner JOIN circulate_reader b on (b.id = a.reader_id and b.org_id=a.org_id)
+		where b.id = #{id}
+		and a.del_flag = '0'
+		and a.org_id=#{orgId}
+	</select>
+	<select id="findCirculateByReader" parameterType="Bill" resultType="Bill">
+		SELECT
+		c.bar_code as "barcode",card.card,a.status
+		FROM circulate_bill a
+		left join CATALOG_COPY c on (c.id=a.copy_id and c.del_flag='0' and c.org_id=a.org_id)
+		left join CIRCULATE_CARD card on (card.reader_id = a.reader_id and card.del_flag='0' AND card.status!= '4' and card.org_id=a.org_id)
+		where a.del_flag = '0'
+		<if test="readerId != null and readerId != ''">
+			and a.reader_id = #{readerId}
+		</if>
+		<if test="status != null and status != ''">
+			and a.status in (${status})
+		</if>
+		and a.org_id=#{orgId}
+	</select>
+
+	<select id="findReaderCirculateInfo" resultType="com.lianyitech.modules.circulate.entity.ReaderCirculateInfo" parameterType="ReaderCard">
+		select a.card as "readerCard",
+		b.id as "readerId",
+		b.img as "img",
+		b.sex as "sex",
+		a.deposit as "deposit",
+		b.cert_type as "certType",
+		b.cert_num as "certNum",
+		b.phone,
+		b.reader_type as "readerType",
+		b.name as "name",
+		a.status as "cardStatus",
+		c.borrow_number as "borrowNumber",
+		a.end_date as "endDate",
+		d.id as "groupId",
+		d.name as "groupName"
+		from circulate_card a
+		inner join circulate_reader b on b.id = a.reader_id and b.del_flag='0' and  b.org_id= #{orgId}
+		inner join circulate_rule c on c.reader_type = b.reader_type
+		left join circulate_group d on b.group_id=d.id and d.org_id= #{orgId}
+		where a.card = #{card} and a.del_flag='0' and a.status!= '4' and c.id = #{ruleId} AND a.org_id=#{orgId} and rownum=1
+	</select>
+
+	<select id="countReaderBorrow" parameterType="Reader" resultType="Integer">
+		select
+		count(b.copy_Id)
+		from
+		circulate_reader a
+		left join circulate_bill b on b.reader_Id = a.id and a.org_id=b.org_id
+		where
+		a.id= #{id}
+		and b.del_flag = '0'
+		and b.status in ('01','71')
+		and a.org_id=#{orgId}
+	</select>
+	<select id="findReaderByCard" resultType="Reader" parameterType="ReaderCard">
+		SELECT *
+		from
+		circulate_reader a
+		where
+		a.cert_num = #{card}
+		and a.org_id=#{orgId}
+	</select>
+
+
+	<select id="queryPastDay" resultType="Bill" >
+		select
+		trunc(sysdate) - trunc(b.should_return_date) as pastDay
+		from circulate_bill b where b.id=#{id}
+	</select>
+
+
+	<select id="findBorrowByBill" resultType="com.lianyitech.modules.circulate.entity.ReaderUnionBook" parameterType="Reader">
+		select
+		b.id as billId,
+		trunc(sysdate) - trunc(b.should_return_date) as pastDay,
+		b.bar_code as "barcode",
+		b.title   as "title",
+		b.sub_title  as "subTitle",
+		b.borrow_date  as "borrowDate",
+		b.return_date        as "returnDate",
+		b.should_return_date as "shouldReturnDate",
+		b.is_order  as "isOrder",
+		b.is_renew  as "isRenew",
+		b.librarsort_code    as "librarsortCode",
+		b.taneji_no  as "tanejiNo",
+		b.ass_no    as "assNo",
+		b.dir_type as "dirType"
+		from circulate_reader a
+		inner join circulate_bill b on (a.id = b.reader_id  and a.org_id = b.org_id and b.del_flag='0')
+		where a.id = #{id} and b.status in ('01','71') and a.del_flag='0' and a.org_id=#{orgId}
+		<if test="keyWords != null and keyWords != ''">
+			and b.title like '%'||#{keyWords}||'%'
+		</if>
+		<if test="billId != null and billId != ''">
+			and b.id=#{billId}
+		</if>
+		order by b.borrow_date desc
+	</select>
+
+	<select id="findBookCirculates" parameterType="com.lianyitech.modules.circulate.entity.CirculateLogDTO" resultType="com.lianyitech.modules.circulate.entity.CirculateLogDTO">
+		select
+		<include refid="circulateColumns"/>
+		from circulate_bill c
+		inner join catalog_copy copy on c.copy_id=copy.id
+		inner join catalog_book_directory book on copy.book_directory_id=book.id
+		inner join circulate_group t on (c.group_id = t.id and t.del_flag = '0')
+		inner join circulate_reader b on (b.id = c.reader_id and b.del_flag='0')
+		inner join circulate_card a on (b.id = a.reader_id and a.del_flag='0' AND a.status!= '4')
+		left join circulate_log d on (c.id = d.bill_id and d.del_flag='0')
+		where 1=1
+		<include refid="circulateWhere"/>
+		and c.org_id=#{orgId}
+		order by d.create_date desc
+	</select>
+
+	<select id="findPeriCirculates" parameterType="com.lianyitech.modules.circulate.entity.CirculateLogDTO" resultType="com.lianyitech.modules.circulate.entity.CirculateLogDTO">
+		select
+		<include refid="circulateColumns"/>
+		from circulate_bill c
+		inner join peri_binding copy on c.copy_id=copy.id
+		inner join peri_directory book on copy.peri_directory_id=book.id
+		inner join circulate_group t on (c.group_id = t.id and t.del_flag = '0')
+		inner join circulate_reader b on (b.id = c.reader_id and b.del_flag='0')
+		inner join circulate_card a on (b.id = a.reader_id and a.del_flag='0' AND a.status!= '4')
+		left join circulate_log d on (c.id = d.bill_id and d.del_flag='0')
+		where 1=1
+		<include refid="circulateWhere"/>
+		<!-- 数据范围过滤-->
+		and c.org_id=#{orgId}
+		order by d.create_date desc
+	</select>
+
+	<!--超期条数-->
+	<select id="countExceed" parameterType="Bill" resultType="Integer">
+		select count(1)
+		from circulate_bill c
+		where  c.del_flag='0'
+		and trunc(sysdate) - trunc(c.should_return_date) >0
+		and c.status in ('01', '71')
+		<if test="orgId!=null and orgId!=''">
+			AND c.org_id = #{orgId}
+		</if>
+		<if test="readerId!=null and readerId!=''">
+			and c.reader_id = #{readerId}
+		</if>
+		AND c.org_id=#{orgId}
+	</select>
+	<!--预约预借-->
+	<select id="findOrderBorrow" parameterType="com.lianyitech.modules.circulate.entity.CirculateLogDTO"
+			resultType="com.lianyitech.modules.circulate.entity.CirculateLogDTO">
+		select
+		c.id,
+		c.id as billId,
+		a.card as readerCardId,
+		t.id as groupId,
+		t.name as groupName,
+		b.name as "name",
+		f.publishing_name as collectName,
+		c.bar_code as barcode,
+		c.title as title,
+		f.author as author,
+		c.librarsort_code as librarsortCode,
+		c.taneji_no as tanejiNo,
+		c.ass_no as assNo,
+		c.reserve_date as reserveDate,
+		c.reserve_lose_date  as reserveLoseDate,
+		--d.log_type as status,
+		<![CDATA[case when (c.status in ('51','65') and trunc(sysdate)-trunc(c.reserve_lose_date)<=0) then 1 else 0 end as hasUse]]>
+		from circulate_bill c
+		inner join catalog_copy e on c.copy_id = e.id and e.org_id=c.org_id
+		inner join catalog_book_directory f on e.book_directory_id = f.id and f.org_id=c.org_id
+		left join sys_collection_site g on g.id = e.collection_site_id
+		left join CIRCULATE_GROUP t on (c.group_id = t.id and t.del_flag = '0')
+		inner join circulate_reader b on (b.id = c.reader_id and b.del_flag='0' and b.org_id=c.org_id)
+		inner join circulate_card a on (b.id = a.reader_id and a.del_flag='0' AND a.status!= '4' and a.org_id=c.org_id)
+		--left join circulate_log d on (c.id = d.bill_id and d.del_flag='0')
+		where 1=1
+		<choose>
+			<!--hasUse=0 无效-->
+			<when test="hasUse != null and hasUse == '0'.toString()">
+				and (c.status in ('91', '100') OR <![CDATA[trunc(sysdate)-trunc(c.reserve_lose_date)>0 ]]>)
+			</when>
+			<!--hasUse=1 有效-->
+			<when test="hasUse != null and hasUse == '1'.toString()">
+				and c.status in ('51','65')
+				and <![CDATA[trunc(sysdate)-trunc(c.reserve_lose_date)<=0 ]]>
+			</when>
+			<otherwise>
+				and c.status in ('51','65','91', '100')
+			</otherwise>
+		</choose>
+		<choose>
+			<!--logType=5 预约-->
+			<when test="logType != null and logType == '5'.toString()">
+				and c.status in ('51', '91')
+			</when>
+			<!--logType=6 预借-->
+			<when test="logType != null and logType == '6'.toString()">
+				and c.status in ('65','100')
+			</when>
+		</choose>
+		<if test="card != null and card != ''">
+			AND a.card = #{card}
+		</if>
+		<if test="keyWord != null and keyWord != ''">
+			and
+			(c.title like '%'||#{keyWord}||'%'
+			or f.author like '%'||#{keyWord}||'%'
+			or f.publishing_name like '%'||#{keyWord}||'%'
+			)
+		</if>
+		<if test="readerCardId != null and readerCardId != ''">
+			AND a.card=#{readerCardId}
+		</if>
+		<if test="nameId != null and nameId != ''">
+			and (a.card LIKE '%'||#{nameId}||'%' or b.name LIKE '%'||#{nameId}||'%')
+		</if>
+		<if test="barcodeTitle != null and barcodeTitle != ''">
+			and (c.bar_code LIKE '%'||#{barcodeTitle}||'%' or c.title LIKE '%'||#{barcodeTitle}||'%')
+		</if>
+		and c.org_id=#{orgId}
+		order by c.CREATE_DATE desc
+	</select>
+
+	<!--根据条形码查询期刊复本-->
+	<select id="findPeriCopyByBarcode" parameterType="Copy" resultType="Map">
+		select * from peri_binding a
+		where a.bar_code = #{barcode}
+ 		and a.org_id=#{orgId}
+		and a.del_flag = #{DEL_FLAG_NORMAL}
+	</select>
+
+	<!--已借未还-->
+	<select id="listBorrowing" parameterType="com.lianyitech.modules.circulate.entity.CirculateLogDTO" resultType="com.lianyitech.modules.circulate.entity.CirculateLogDTO">
+		select  c.id as "billId",
+				c.bar_code as barcode,
+				c.title as title,
+				to_char(to_timestamp(c.borrow_date), 'yyyy-mm-dd hh24:mi:ss') as borrowDate,
+				to_char(to_timestamp(c.should_return_date), 'yyyy-mm-dd hh24:mi:ss') as shouldReturnDate,
+				a.card as "readerCardId",
+				b.name as "name",
+				t.id as groupId,
+				t.name as groupName,
+				b.reader_type as readerType,
+				trunc(sysdate) - trunc(c.should_return_date) as pastDay
+		from circulate_bill c
+		inner join CIRCULATE_GROUP t
+		on (c.group_id = t.id and t.del_flag = '0')
+		inner join circulate_reader b
+		on (b.id = c.reader_id and b.del_flag = '0' and b.org_id=c.org_id)
+		inner join circulate_card a
+		on (b.id = a.reader_id and a.del_flag = '0' AND a.status != '4' and a.org_id=c.org_id)
+		where 1 = 1
+		AND c.bill_type ='0'
+		and c.status in ('01','71')
+		and c.return_date is null
+		<if test="status != null and status != ''">
+			and c.status in (${status})
+		</if>
+
+		<if test="nameId != null and nameId != ''">
+			and (a.card LIKE '%'||#{nameId}||'%' or b.name LIKE '%'||#{nameId}||'%')
+		</if>
+		<if test="readerType != null and readerType != ''">
+			and b.reader_type = #{readerType}
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t.name  like '%'||#{groupName}||'%'
+		</if>
+		<if test="barcodeTitle != null and barcodeTitle != ''">
+			and (c.bar_code LIKE '%'||#{barcodeTitle}||'%' or c.title LIKE '%'||#{barcodeTitle}||'%')
+		</if>
+		<if test="beginBorrowDate != null">
+			<![CDATA[and c.borrow_date >= #{beginBorrowDate}]]>
+		</if>
+		<if test="endBorrowDate != null">
+			<![CDATA[and c.borrow_date <= #{endBorrowDate}]]>
+		</if>
+		<if test="beginShouldReturnDate != null">
+			<![CDATA[and c.should_return_date >= #{beginShouldReturnDate}]]>
+		</if>
+		<if test="endShouldReturnDate != null">
+			<![CDATA[and c.should_return_date <= #{endShouldReturnDate}]]>
+		</if>
+		<choose>
+			<when test="pastStatus == '0'.toString()">
+				<![CDATA[and trunc(sysdate) - trunc(c.should_return_date) <= 0]]>
+			</when>
+			<when test="pastStatus == '1'.toString()">
+				<![CDATA[and trunc(sysdate) - trunc(c.should_return_date) > 0]]>
+			</when>
+		</choose>
+		<if test="dirType!=null and dirType!=''">
+			and c.dir_type = #{dirType}
+		</if>
+		and c.org_id = #{orgId}
+		order by c.create_date desc
+	</select>
+
+	<update id="updateBillGroup" parameterType="String"  >
+		update circulate_bill t set t.group_id = #{groupId}
+		where t.reader_id = #{readerId}
+		and t.del_flag = '0' and t.org_id=#{orgId}
+	</update>
+	<!--取消合订期刊时条码是否流通过-->
+	<select id="periBarcode" parameterType="java.util.Map" resultType="java.lang.String">
+		select distinct t.bar_code as barcode
+		from CIRCULATE_BILL t
+		where t.org_id = #{orgId}
+		and t.del_flag = '0'
+		and t.bar_code in
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="borrowDay" parameterType="java.lang.String" resultType="java.lang.Integer">
+		select trunc(sysdate) - trunc(borrow_date)
+		from CIRCULATE_BILL t
+		where t.copy_id = (select t.copy_id
+						   from CIRCULATE_BILL t
+						   where t.del_flag = '0'
+								 and t.bar_code = #{barcode}
+								 and t.org_id = #{orgId}
+								 and t.return_date is null)
+			  and t.del_flag = '0'
+			  and t.org_id = #{orgId}
+			  and t.bar_code = #{barcode}
+			  and t.return_date is null
+	</select>
+</mapper>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.sys.dao.CatalogSetDao">
+
+	<sql id="catalogSetColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.cnf_type AS "cnfType",
+		a.cnf_method AS "cnfMethod",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag"
+	</sql>
+    
+	<select id="findList" resultType="CatalogSet">
+		SELECT 
+			<include refid="catalogSetColumns"/>
+		FROM SYS_CATE_CONFIG a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			AND a.org_id = #{orgId}
+			<if test="cnfType != null and cnfType !=''">
+				AND a.cnf_type = #{cnfType}
+			</if>
+		</where>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO SYS_CATE_CONFIG(
+		id,
+		org_id,
+		cnf_type,
+		cnf_method,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) VALUES (
+		#{id},
+		#{orgId},
+		#{cnfType},
+		#{cnfMethod},
+		#{createBy},
+		#{createDate},
+		#{updateBy},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE SYS_CATE_CONFIG SET
+		cnf_method = #{cnfMethod},
+		update_by = #{updateBy},
+		update_date = #{updateDate},
+		remarks = #{remarks}
+		WHERE id = #{id}
+
+	</update>
+	
+
+</mapper>

@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.BatchDao">
+    
+	<sql id="batchColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.batch_no AS "batchNo",
+		a.species_num AS "speciesNum",
+		a.book_num AS "bookNum",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.status AS "status"
+	</sql>
+	
+	<sql id="batchJoins">
+	</sql>
+
+	<select id="get" resultType="Batch">
+		SELECT
+		<include refid="batchColumns"/>
+		FROM catalog_batch a
+		<include refid="batchJoins"/>
+		WHERE a.id = #{id}
+	</select>
+
+	<select id="findList" resultType="Batch">
+		SELECT
+			a.id AS "id",
+			a.org_id AS "orgId",
+			a.batch_no AS "batchNo",
+			a.create_by AS "createBy",
+			a.create_date AS "createDate",
+			a.update_by AS "updateBy",
+			a.update_date AS "updateDate",
+			a.remarks AS "remarks",
+			a.del_flag AS "delFlag",
+			a.status AS "status",
+			(select count(book_directory_id) from CATALOG_COPY t
+				where t.batch_id = a.id AND t.Del_Flag='0' and t.org_id=#{orgId}
+			) as bookNum,
+			(select count(distinct b.librarsort_Code) from catalog_book_directory b
+				where b.org_id = #{orgId} and b.del_flag='0'
+					and b.id in (select book_directory_id from catalog_copy c where c.batch_id = a.id AND c.Del_Flag='0' and c.org_id=#{orgId})
+			) as speciesNum
+		FROM catalog_batch a
+		<include refid="batchJoins"/>
+		where
+			a.type ='0'
+			and a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.org_id = #{orgId}
+
+			<if test="batchNo != null and batchNo != ''">
+				AND a.batch_no LIKE '%'||#{batchNo}||'%'
+			</if>
+
+			<choose>
+				<when test="beginDate != null and beginDate != '' and endDate != null and endDate != ''">
+					<![CDATA[
+					 and a.create_date >= to_timestamp(#{beginDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+					 and a.create_date <= to_timestamp(#{endDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+					]]>
+				</when>
+				<when test="beginDate != null and beginDate != ''">
+					<![CDATA[
+					 and a.create_date >= to_timestamp(#{beginDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+					 and a.create_date <= to_timestamp(#{beginDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+					]]>
+				</when>
+				<when test="endDate != null and endDate != ''">
+					<![CDATA[
+					 and a.create_date >= to_timestamp(#{endDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+					 and a.create_date <= to_timestamp(#{endDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+					]]>
+				</when>
+			</choose>
+
+			<choose>
+				<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+					ORDER BY ${page.orderBy}
+				</when>
+				<otherwise>
+					ORDER BY a.update_date DESC
+				</otherwise>
+			</choose>
+	</select>
+
+	<select id="findPeriList" resultType="Batch">
+		SELECT a.id AS "id",
+		a.org_id AS "orgId",
+		a.batch_no AS "batchNo",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.status AS "status",
+		(select SUM (ORDER_AMOUNT*ORDER_PERI)
+		from peri_order t
+		where t.batch_no = a.batch_no
+		AND T.Del_Flag = '0' and t.org_id =#{orgId}) as bookNum,
+		(select sum(s.order_amount)
+		from peri_order_detail s
+		join peri_order t on s.order_id = t.id
+		where t.batch_no = a.batch_no
+		AND t.del_flag = '0' and t.org_id =#{orgId}) as actualBookNum,
+		(select count(distinct b.LIBRARSORT_CODE)
+		from peri_directory b
+		where b.id in (select peri_directory_id
+		from peri_order c
+		where c.batch_no = a.batch_no
+		AND c.Del_Flag = '0')and b.org_id =#{orgId} ) as speciesNum,
+		(select count(distinct b.LIBRARSORT_CODE)
+		from peri_directory b
+		where b.id in (select peri_directory_id
+		from peri_order c
+		join peri_order_detail p on c.id = p.order_id
+		where c.batch_no = a.batch_no
+		and p.arrive_amount > 0
+		AND c.Del_Flag = '0')and b.org_id =#{orgId}) as actualSpeciesNum
+		FROM catalog_batch a
+		<include refid="batchJoins"/>
+		<where>
+			a.type ='1'
+			and a.del_flag = #{DEL_FLAG_NORMAL}
+			and a.org_id = #{orgId}
+		</where>
+		<if test="batchNo != null and batchNo != ''">
+			AND a.batch_no LIKE '%'||#{batchNo}||'%'
+		</if>
+		<choose>
+			<when test="beginDate != null and beginDate != '' and endDate != null and endDate != ''">
+				<![CDATA[
+				 and a.create_date >= to_timestamp(#{beginDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+				 and a.create_date <= to_timestamp(#{endDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+				]]>
+			</when>
+			<when test="beginDate != null and beginDate != ''">
+				<![CDATA[
+				 and a.create_date >= to_timestamp(#{beginDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+				 and a.create_date <= to_timestamp(#{beginDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+				]]>
+			</when>
+			<when test="endDate != null and endDate != ''">
+				<![CDATA[
+				 and a.create_date >= to_timestamp(#{endDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+				 and a.create_date <= to_timestamp(#{endDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+				]]>
+			</when>
+		</choose>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO catalog_batch(
+			id,
+			org_id,
+			batch_no,
+			species_num,
+			book_num,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			type,
+			status
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{batchNo},
+			#{speciesNum},
+			#{bookNum},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{type},
+			#{status}
+		)
+	</insert>
+
+	
+	<update id="update">
+		UPDATE catalog_batch SET
+			batch_no = #{batchNo},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			status = #{status}
+		WHERE id = #{id} and org_id = #{orgId}
+	</update>
+
+	<update id="updateStatus">
+		update catalog_batch set
+			status = #{DEL_FLAG_DELETE}
+		where status = #{DEL_FLAG_NORMAL}  and org_id = #{orgId} and type =#{type}
+	</update>
+	
+	<update id="delete">
+		UPDATE catalog_batch SET 
+			del_flag = '1'
+		WHERE type = #{type}
+		and id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</update>
+
+	<select id="countBatchNo" parameterType="Batch" resultType="Integer">
+		select count(1) from catalog_batch where batch_no = #{batchNo} and del_flag = '0' and org_id=#{orgId} and type = #{type}
+		<if test="id != null and id != ''">
+			and id!=#{id}
+		</if>
+	</select>
+
+	<!--判断批次下是否有复本信息-->
+	<select id="checkBatchByCopy" parameterType="java.util.Map" resultType="java.lang.Integer">
+		select count(1)
+		from CATALOG_BATCH t
+		<choose>
+			<when test="type != null and type != '' and (type == 1 or type == '1')"><!--目前期刊跟批次关联是通过批次号-->
+				inner join PERI_ORDER o
+				on (t.batch_no = o.batch_no and o.del_flag = '0' and o.org_id=#{orgId})
+			</when>
+			<when test="type != null and type != '' and (type == 0 or type == '0')"><!--目前复本跟批次关联是通过id，批次号就是一个假的-->
+				inner join CATALOG_COPY c
+				on (t.id = c.batch_id and c.del_flag = '0' and c.org_id=#{orgId})
+			</when>
+		</choose>
+		where t.del_flag = '0'
+		and t.type = #{type}
+		and t.org_id = #{orgId}
+		and t.id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="getByBatchNo" resultType="Batch">
+		select
+			<include refid="batchColumns"/>
+		from catalog_batch a
+		where
+			a.batch_no = #{batchNo}
+			and a.del_flag = '0'
+			and a.org_id = #{orgId}
+			and a.type = #{type}
+	</select>
+	<!--插入导入馆藏时插入的新批次号-->
+	<insert id="insertBatch">
+		insert into catalog_batch (
+			id,
+			org_id,
+			batch_no,
+			species_num,
+			book_num,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			type,
+			status)
+		select sys_guid() as id,
+		#{orgId} as ORG_ID,
+		t.batch_no as BATCH_NO,
+		null as SPECIES_NUM,
+		null as BOOK_NUM,
+		#{orgId} as create_by,
+		sysdate as create_date,
+		#{orgId} as update_by,
+		sysdate as update_date,
+		'通过馆藏导入生成' as remarks,
+		'0' as del_flag,
+		'0' as type,
+		'1' as status
+		from ${tableName} t
+		where t.state = 0
+		and t.batch_no is not null
+		and not exists (select 1
+		from catalog_batch b
+		where b.org_id = #{orgId}
+		and b.del_flag = '0'
+		and b.batch_no = t.batch_no)
+		and t.rowid in (select max(c.rowid)
+		from ${tableName} c
+		where t.batch_no = c.batch_no
+		and c.state = 0)
+	</insert>
+</mapper>

@@ -1,0 +1,1470 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.BookDirectoryDao">
+
+	<sql id="bookDirectoryListColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.isbn AS "isbn",
+		a.title AS "title",
+		a.sub_title AS "subTitle",
+		a.tied_title AS "tiedTitle",
+		a.part_name AS "partName",
+		a.part_num AS "partNum",
+		a.series_name AS "seriesName",
+		a.author AS "author",
+		a.sub_author AS "subAuthor",
+		a.series_editor AS "seriesEditor",
+		a.translator AS "translator",
+		a.publishing_name AS "publishingName",
+		a.publishing_address AS "publishingAddress",
+		a.publishing_time AS "publishingTime",
+		a.librarsort_id AS "librarsortId",
+		a.librarsort_code AS "librarsortCode",
+		a.price AS "price",
+		a.edition AS "edition",
+		a.language AS "language",
+		a.measure AS "measure",
+		a.page_no AS "pageNo",
+		a.binding_form AS "bindingForm",
+		a.best_age AS "bestAge",
+		a.attachment_note AS "attachmentNote",
+		a.subject AS "subject",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.taneji_no AS "tanejiNo",
+		a.ass_no AS "assNo",
+		a.purpose AS "purpose",
+		a.book_no AS "bookNo"
+	</sql>
+
+	<sql id="bookDirectoryColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.isbn AS "isbn",
+		a.title AS "title",
+		a.sub_title AS "subTitle",
+		a.tied_title AS "tiedTitle",
+		a.part_name AS "partName",
+		a.part_num AS "partNum",
+		a.series_name AS "seriesName",
+		a.author AS "author",
+		a.sub_author AS "subAuthor",
+		a.series_editor AS "seriesEditor",
+		a.translator AS "translator",
+		a.publishing_name AS "publishingName",
+		a.publishing_address AS "publishingAddress",
+		a.publishing_time AS "publishingTime",
+		a.librarsort_id AS "librarsortId",
+		a.librarsort_code AS "librarsortCode",
+		a.price AS "price",
+		a.edition AS "edition",
+		a.language AS "language",
+		a.measure AS "measure",
+		a.page_no AS "pageNo",
+		a.binding_form AS "bindingForm",
+		a.best_age AS "bestAge",
+		a.attachment_note AS "attachmentNote",
+		a.subject AS "subject",
+		a.content AS "content",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.taneji_no AS "tanejiNo",
+		a.ass_no AS "assNo",
+		a.purpose AS "purpose",
+		a.book_no AS "bookNo",
+		a.marc64 AS "marc64"
+	</sql>
+
+	<sql id="bookDirectoryJoins">
+	</sql>
+
+	<select id="get" resultType="BookDirectory">
+		SELECT
+		<include refid="bookDirectoryColumns"/>
+		FROM catalog_book_directory a
+		<include refid="bookDirectoryJoins"/>
+		WHERE a.id = #{id}
+	</select>
+
+	<select id="getBookDirectory" resultType="BookDirectory">
+		SELECT
+		<include refid="bookDirectoryColumns"/>
+		FROM catalog_book_directory a
+		<include refid="bookDirectoryJoins"/>
+		WHERE a.id = #{id} and a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+	</select>
+
+	<select id="findList" resultType="BookDirectory">
+		SELECT
+		<include refid="bookDirectoryListColumns"/>
+		FROM catalog_book_directory a
+		<include refid="bookDirectoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} AND a.org_id = #{orgId}
+			<if test="createBy != null and createBy != ''">
+				AND a.create_by LIKE '%'||#{createBy}||'%'
+			</if>
+
+			<if test="sqlStr != null and sqlStr != ''">
+				 ${sqlStr}
+			</if>
+
+			<!--<if test="isbn != null and isbn != ''">&lt;!&ndash;这里是组合查询&ndash;&gt;-->
+				<!--AND (replace(a.isbn,'-') = replace(#{isbn},'-')-->
+				<!--<if test="title != null and title != ''">&lt;!&ndash;这里是组合查询&ndash;&gt;-->
+					<!--OR a.title LIKE '%'||#{title}||'%' OR a.author LIKE '%'||#{title}||'%' OR a.PUBLISHING_NAME LIKE '%'||#{title}||'%' OR a.SERIES_NAME LIKE '%'||#{title}||'%'-->
+				<!--</if>-->
+				<!--)-->
+			<!--</if>-->
+
+			<if test="id != null and id !=''">
+				AND a.id = #{id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="BookDirectory">
+		SELECT
+		<include refid="bookDirectoryListColumns"/>
+		FROM catalog_book_directory a
+		<include refid="bookDirectoryJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} AND a.org_id = #{orgId}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="getDirectoryByCopyIds" resultType="BookDirectory">
+	  select
+		<include refid="bookDirectoryColumns"/>
+	  from catalog_book_directory a
+	  where a.del_flag = '0' AND a.org_id = #{orgId} and
+		exists (
+			select 1 from catalog_copy c
+			where c.del_flag = '0' and a.id=c.book_directory_id and c.org_id = #{orgId}
+				and c.id IN
+				<foreach item="id" collection="idList" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+		)
+	</select>
+
+
+	<insert id="batchInsertCopyList" parameterType="java.util.List">
+		BEGIN
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO catalog_copy(
+			id,
+			org_id,
+			book_directory_id,
+			collection_site_id,
+			bar_code,
+			batch_id,
+			status,
+			is_renew,
+			is_stained,
+			is_order,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			place
+			) VALUES (
+			#{item.id},
+			#{item.orgId},
+			#{item.bookDirectoryId},
+			#{item.collectionSiteId},
+			#{item.barcode},
+			#{item.batchId},
+			decode(#{item.status},'','0',null,'0',#{item.status}),
+			#{item.isRenew},
+			#{item.isStained},
+			#{item.isOrder},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.delFlag},
+			#{item.place}
+			)
+		</foreach>
+		;END;
+	</insert>
+
+	<insert id="batchSaveCopyTemp" parameterType="java.util.List">
+		BEGIN
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO ${tableName}(
+			id,
+			BOOK_DIRECTORY_ID,
+			org_id,
+			book_id,
+			COLLECTION_SITE_NAME,
+			bar_code,
+			batch_no,
+			status,
+			is_renew,
+			is_stained,
+			is_order,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			place,
+			ass_no
+			) VALUES (
+			#{item.id},
+			#{item.id},
+			#{item.orgId},
+			#{item.bookDirectoryId},
+			#{item.collectionSiteName},
+			#{item.barcode},
+			#{item.batchNo},
+			decode(#{item.status},'','0',null,'0',#{item.status}),
+			#{item.isRenew},
+			#{item.isStained},
+			#{item.isOrder},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.place},
+			#{item.assNo}
+			)
+		</foreach>
+		;END;
+	</insert>
+
+	<insert id="batchinsert" parameterType="java.util.List">
+		BEGIN
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO catalog_book_directory(
+			id,
+			org_id,
+			isbn,
+			title,
+			sub_title,
+			tied_title,
+			part_name,
+			part_num,
+			series_name,
+			author,
+			sub_author,
+			series_editor,
+			translator,
+			publishing_name,
+			publishing_address,
+			publishing_time,
+			librarsort_id,
+			librarsort_code,
+			price,
+			edition,
+			language,
+			measure,
+			page_no,
+			binding_form,
+			best_age,
+			attachment_note,
+			subject,
+			content,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			taneji_no,
+			book_no,
+			ass_no
+			) values
+			(#{item.id},
+			#{item.orgId},
+			#{item.isbn},
+			#{item.title},
+			#{item.subTitle},
+			#{item.tiedTitle},
+			#{item.partName},
+			#{item.partNum},
+			#{item.seriesName},
+			#{item.author},
+			#{item.subAuthor},
+			#{item.seriesEditor},
+			#{item.translator},
+			#{item.publishingName},
+			#{item.publishingAddress},
+			#{item.publishingTime},
+			#{item.librarsortId},
+			#{item.librarsortCode},
+			#{item.price},
+			#{item.edition},
+			#{item.language},
+			#{item.measure},
+			#{item.pageNo},
+			#{item.bindingForm},
+			#{item.bestAge},
+			#{item.attachmentNote},
+			#{item.subject},
+			#{item.content},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.delFlag},
+			#{item.tanejiNo},
+			#{item.bookNo},
+			#{item.assNo})
+		</foreach>
+		;END;
+	</insert>
+
+	<insert id="batchSaveTemp" parameterType="java.util.List">
+		BEGIN
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO ${tableName}(
+			id,
+			BOOK_DIRECTORY_ID,
+			org_id,
+			isbn,
+			title,
+			sub_title,
+			tied_title,
+			part_name,
+			part_num,
+			series_name,
+			author,
+			sub_author,
+			series_editor,
+			translator,
+			publishing_name,
+			publishing_address,
+			publishing_time,
+			librarsort_id,
+			librarsort_code,
+			price,
+			edition,
+			language,
+			measure,
+			page_no,
+			binding_form,
+			best_age,
+			attachment_note,
+			subject,
+			content,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			taneji_no,
+			book_no,
+			ass_no,
+			BAR_CODE,
+			COLLECTION_SITE_NAME,
+			BATCH_NO
+			) values
+			(#{item.id},
+			#{item.id},
+			#{item.orgId},
+			replace(#{item.isbn},'-',''),
+			#{item.title},
+			#{item.subTitle},
+			#{item.tiedTitle},
+			#{item.partName},
+			#{item.partNum},
+			#{item.seriesName},
+			#{item.author},
+			#{item.subAuthor},
+			#{item.seriesEditor},
+			#{item.translator},
+			#{item.publishingName},
+			#{item.publishingAddress},
+			#{item.publishingTime},
+			#{item.librarsortId},
+			#{item.librarsortCode},
+			#{item.price},
+			#{item.edition},
+			#{item.language},
+			#{item.measure},
+			#{item.pageNo},
+			#{item.bindingForm},
+			#{item.bestAge},
+			#{item.attachmentNote},
+			#{item.subject},
+			#{item.content},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.tanejiNo},
+			#{item.bookNo},
+			#{item.assNo},
+			#{item.barcode},
+			#{item.collectionSiteName},
+			#{item.batchNo})
+		</foreach>
+		;END;
+	</insert>
+
+	<insert id="batchSaveTempCopy" parameterType="java.util.List">
+		BEGIN
+		<foreach collection="list" item="item" index="index" separator=";" >
+			INSERT INTO ${tableName}(
+			id,
+			org_id,
+			book_directory_id,
+			BOOK_ID,
+			collection_site_id,
+			bar_code,
+			batch_id,
+			status,
+			is_renew,
+			is_stained,
+			is_order,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			place
+			) VALUES (
+			#{item.id},
+			#{item.orgId},
+			#{item.bookDirectoryId},
+			#{item.bookDirectoryId},
+			#{item.collectionSiteId},
+			#{item.barcode},
+			#{item.batchId},
+			decode(#{item.status},'','0',null,'0',#{item.status}),
+			#{item.isRenew},
+			#{item.isStained},
+			#{item.isOrder},
+			#{item.createBy},
+			#{item.createDate},
+			#{item.updateBy},
+			#{item.updateDate},
+			#{item.remarks},
+			#{item.delFlag},
+			#{item.place}
+			)
+		</foreach>
+		;END;
+	</insert>
+
+	<update id="dropTempTable" parameterType="java.lang.String">
+		declare
+		tblcnt number := 0;
+		begin
+		select count(1)
+		into tblcnt
+		from user_tables ut
+		where ut.TABLE_NAME = upper(#{value});
+		if tblcnt = 1 then
+		execute immediate 'drop table ${value}';
+		end if;
+		end;
+	</update>
+
+	<update id="createBookTemp" parameterType="java.lang.String">
+		create table ${value}
+		(
+		ORG_ID               VARCHAR2(64),
+		ISBN                 VARCHAR2(64),
+		TITLE                VARCHAR2(512),
+		SUB_TITLE            VARCHAR2(512),
+		TIED_TITLE           VARCHAR2(512),
+		PART_NAME            VARCHAR2(512),
+		PART_NUM             VARCHAR2(512),
+		SERIES_NAME          VARCHAR2(512),
+		AUTHOR               VARCHAR2(512),
+		SUB_AUTHOR           VARCHAR2(512),
+		SERIES_EDITOR        VARCHAR2(512),
+		TRANSLATOR           VARCHAR2(512),
+		PUBLISHING_NAME      VARCHAR2(512),
+		PUBLISHING_ADDRESS   VARCHAR2(512),
+		PUBLISHING_TIME      VARCHAR2(512),
+		LIBRARSORT_ID        VARCHAR2(512),
+		LIBRARSORT_CODE      VARCHAR2(512),
+		PRICE                NUMBER default 0,
+		EDITION              VARCHAR2(512),
+		LANGUAGE             VARCHAR2(512),
+		LANGUAGE_NAME         VARCHAR2(512),
+		MEASURE              VARCHAR2(512),
+		PAGE_NO              VARCHAR2(512),
+		BINDING_FORM         VARCHAR2(512),
+		BINDING_FORM_NAME    VARCHAR2(512),
+		BEST_AGE             VARCHAR2(512),
+		BEST_AGE_NAME        VARCHAR2(512),
+		ATTACHMENT_NOTE      VARCHAR2(512),
+		SUBJECT              VARCHAR2(512),
+		CONTENT              CLOB,
+		CREATE_BY            VARCHAR2(64),
+		CREATE_DATE          TIMESTAMP(6) default sysdate,
+		UPDATE_BY            VARCHAR2(64),
+		UPDATE_DATE          TIMESTAMP(6) default sysdate,
+		REMARKS              NVARCHAR2(256),
+		TANEJI_NO            VARCHAR2(64),
+		ASS_NO               VARCHAR2(64),
+		PURPOSE              VARCHAR2(64),
+		PURPOSE_NAME         VARCHAR2(64),
+		BOOK_NO              VARCHAR2(64),
+		BAR_CODE             VARCHAR2(4000),
+		COLLECTION_SITE_NAME VARCHAR2(512),
+		BATCH_NO             VARCHAR2(20),
+		STATE                NUMBER default 0,
+		RESULT               VARCHAR2(512),
+		TYPE                 NUMBER,
+		ID                   VARCHAR2(64),
+		BOOK_DIRECTORY_ID    VARCHAR2(64),
+		ISMATCH              NUMBER default 0
+		)
+	</update>
+
+	<update id="createCopyTemp" parameterType="java.lang.String">
+		create table ${value}
+		(
+		ID                   VARCHAR2(64),
+		ORG_ID               VARCHAR2(64),
+		BOOK_DIRECTORY_ID    VARCHAR2(64),
+		COLLECTION_SITE_NAME VARCHAR2(512),
+		BAR_CODE             VARCHAR2(50),
+		STATUS               CHAR(1),
+		IS_RENEW             CHAR(1),
+		IS_STAINED           CHAR(1),
+		CREATE_BY            VARCHAR2(64),
+		CREATE_DATE          TIMESTAMP(6),
+		UPDATE_BY            VARCHAR2(64),
+		UPDATE_DATE          TIMESTAMP(6),
+		REMARKS              NVARCHAR2(255),
+		PLACE                VARCHAR2(50),
+		IS_ORDER             CHAR(1),
+		BATCH_NO             VARCHAR2(20),
+		STATE                NUMBER default 0,
+		RESULT               VARCHAR2(512),
+		TYPE                 NUMBER,
+		BOOK_ID              VARCHAR2(64),
+		COLLECTION_SITE_ID   VARCHAR2(64),
+		BATCH_ID             VARCHAR2(64),
+		ASS_NO				 VARCHAR2(64)
+		)
+	</update>
+
+	<!--这个保存是针对简单编目的数据信息千万不要对马克字段进行修改-->
+	<insert id="insert">
+		INSERT INTO catalog_book_directory(
+		id,
+		org_id,
+		isbn,
+		title,
+		sub_title,
+		tied_title,
+		part_name,
+		part_num,
+		series_name,
+		author,
+		sub_author,
+		series_editor,
+		translator,
+		publishing_name,
+		publishing_address,
+		publishing_time,
+		librarsort_id,
+		librarsort_code,
+		price,
+		edition,
+		language,
+		measure,
+		page_no,
+		binding_form,
+		best_age,
+		attachment_note,
+		subject,
+		content,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) VALUES (
+		#{id},
+		#{orgId},
+		#{isbn},
+		#{title},
+		#{subTitle},
+		#{tiedTitle},
+		#{partName},
+		#{partNum},
+		#{seriesName},
+		#{author},
+		#{subAuthor},
+		#{seriesEditor},
+		#{translator},
+		#{publishingName},
+		#{publishingAddress},
+		#{publishingTime},
+		#{librarsortId},
+		#{librarsortCode},
+		#{price},
+		#{edition},
+		#{language},
+		#{measure},
+		#{pageNo},
+		#{bindingForm},
+		#{bestAge},
+		#{attachmentNote},
+		#{subject},
+		#{content},
+		#{createBy},
+		#{createDate},
+		#{updateBy},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE catalog_book_directory t SET
+		isbn = #{isbn},
+		title = #{title},
+		sub_title = #{subTitle},
+		tied_title = #{tiedTitle},
+		part_name = #{partName},
+		part_num = #{partNum},
+		series_name = #{seriesName},
+		author = #{author},
+		sub_author = #{subAuthor},
+		series_editor = #{seriesEditor},
+		translator = #{translator},
+		publishing_name = #{publishingName},
+		publishing_address = #{publishingAddress},
+		publishing_time = #{publishingTime},
+		librarsort_id = #{librarsortId},
+		librarsort_code = #{librarsortCode},
+		price = #{price},
+		edition = #{edition},
+		language = #{language},
+		measure = #{measure},
+		page_no = #{pageNo},
+		binding_form = #{bindingForm},
+		best_age = #{bestAge},
+		attachment_note = #{attachmentNote},
+		subject = #{subject},
+		purpose = #{purpose},
+		content = #{content},
+		update_by = #{updateBy},
+		update_date = #{updateDate},
+		remarks = #{remarks}
+		<!--下面2个需要判断下如果没传入这个值得情况下不需要对这2个字段进行修改-->
+		<if test="tanejiNo!=null">
+			,taneji_no = #{tanejiNo}
+		</if>
+		<if test="bookNo!=null">
+			,book_no = #{bookNo}
+		</if>
+		<if test="assNo!=null">
+			,ass_no = #{assNo}
+		</if>
+		WHERE id = #{id} and del_flag = #{DEL_FLAG_NORMAL} AND org_id = #{orgId}
+	</update>
+
+	<!---加个方法用来只修改马克数据的-->
+	<update id="updateMarc">
+		UPDATE catalog_book_directory t SET marc64 = #{marc64},update_date = #{updateDate}
+		WHERE id = #{id} and del_flag = #{DEL_FLAG_NORMAL} AND org_id = #{orgId}
+	</update>
+
+	<update id="delete">
+		UPDATE catalog_book_directory t SET
+		del_flag = #{DEL_FLAG_DELETE},update_date = #{updateDate}
+		WHERE id = #{id} and del_flag = #{DEL_FLAG_NORMAL} AND org_id = #{orgId}
+	</update>
+
+	<!--根据26个字段来查询馆藏书目表是否存在相同的记录 有所修改，就是数据库里面的数据万一存在null的情况则需要下面判断-->
+	<select id="getCountByCon"  resultType="java.lang.Integer">
+		SELECT
+		count(1)
+		FROM catalog_book_directory a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			<choose>
+				<when test="isbn != null and isbn != ''">
+					and a.isbn = #{isbn}
+				</when>
+				<otherwise>
+					and a.isbn is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="title != null and title != ''">
+					and a.title = #{title}
+				</when>
+				<otherwise>
+					and a.title is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="author != null and author != ''">
+					and a.author = #{author}
+				</when>
+				<otherwise>
+					and a.author is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="publishingName != null and publishingName != ''">
+					and a.publishing_name = #{publishingName}
+				</when>
+				<otherwise>
+					and a.publishing_name is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="publishingTime != null and publishingTime != ''">
+					and a.publishing_time = #{publishingTime}
+				</when>
+				<otherwise>
+					and a.publishing_time is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="librarsortCode != null and librarsortCode != ''">
+					and a.librarsort_code = #{librarsortCode}
+				</when>
+				<otherwise>
+					and a.librarsort_code is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="price != null">
+					and a.price = #{price}
+				</when>
+				<otherwise>
+					and a.price is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="subTitle != null and subTitle != ''">
+					and a.sub_title = #{subTitle}
+				</when>
+				<otherwise>
+					and a.sub_title is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="tiedTitle != null and tiedTitle != ''">
+					and a.tied_title = #{tiedTitle}
+				</when>
+				<otherwise>
+					and a.tied_title is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="partName != null and partName != ''">
+					and a.part_name = #{partName}
+				</when>
+				<otherwise>
+					and a.part_name is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="partNum != null and partNum != ''">
+					and a.part_num = #{partNum}
+				</when>
+				<otherwise>
+					and a.part_num is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="seriesName != null and seriesName != ''">
+					and a.series_name = #{seriesName}
+				</when>
+				<otherwise>
+					and a.series_name is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="subAuthor != null and subAuthor != ''">
+					and a.sub_author = #{subAuthor}
+				</when>
+				<otherwise>
+					and a.sub_author is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="seriesEditor != null and seriesEditor != ''">
+					and a.series_editor = #{seriesEditor}
+				</when>
+				<otherwise>
+					and a.series_editor is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="translator != null and translator != ''">
+					and a.translator = #{translator}
+				</when>
+				<otherwise>
+					and a.translator is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="publishingAddress != null and publishingAddress != ''">
+					and a.publishing_address = #{publishingAddress}
+				</when>
+				<otherwise>
+					and a.publishing_address is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="subject != null and subject != ''">
+					and a.subject = #{subject}
+				</when>
+				<otherwise>
+					and a.subject is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="edition != null and edition != ''">
+					and a.edition = #{edition}
+				</when>
+				<otherwise>
+					and a.edition is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="language != null and language != ''">
+					and a.language = #{language}
+				</when>
+				<otherwise>
+					and a.language is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="measure != null and measure != ''">
+					and a.measure = #{measure}
+				</when>
+				<otherwise>
+					and a.measure is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="pageNo != null and pageNo != ''">
+					and a.page_no = #{pageNo}
+				</when>
+				<otherwise>
+					and a.page_no is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="bindingForm != null and bindingForm != ''">
+					and a.binding_form = #{bindingForm}
+				</when>
+				<otherwise>
+					and a.binding_form is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="bestAge != null and bestAge != ''">
+					and a.best_age = #{bestAge}
+				</when>
+				<otherwise>
+					and a.best_age is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachmentNote != null and attachmentNote != ''">
+					and a.attachment_note = #{attachmentNote}
+				</when>
+				<otherwise>
+					and a.attachment_note is null
+				</otherwise>
+			</choose>
+			<!--内容简介暂时不加如判断产品还需要讨论确定-->
+			<!--if test="content != null and content != ''">
+				and to_char(a.content) = #{content}
+			</if-->
+			<if test="id != null and id != ''">
+				and a.id != #{id}
+			</if>
+		</where>
+	</select>
+
+	<!--判断导入书目是否唯一-->
+	<select id="getCount"  resultType="java.lang.Integer">
+		SELECT
+		count(1)
+		FROM catalog_book_directory a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			<choose>
+				<when test="isbn != null and isbn != ''">
+					and a.isbn = #{isbn}
+				</when>
+				<otherwise>
+					and a.isbn is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="title != null and title != ''">
+					and a.title = #{title}
+				</when>
+				<otherwise>
+					and a.title is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="author != null and author != ''">
+					and a.author = #{author}
+				</when>
+				<otherwise>
+					and a.author is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="publishingName != null and publishingName != ''">
+					and a.publishing_name = #{publishingName}
+				</when>
+				<otherwise>
+					and a.publishing_name is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="publishingTime != null and publishingTime != ''">
+					and a.publishing_time = #{publishingTime}
+				</when>
+				<otherwise>
+					and a.publishing_time is null
+				</otherwise>
+			</choose>
+
+			<choose>
+				<when test="price != null">
+					and a.price = #{price}
+				</when>
+				<otherwise>
+					and a.price is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="edition != null and edition != ''">
+					and a.edition = #{edition}
+				</when>
+				<otherwise>
+					and a.edition is null
+				</otherwise>
+			</choose>
+
+			<choose>
+				<when test="measure != null and measure != ''">
+					and a.measure = #{measure}
+				</when>
+				<otherwise>
+					and a.measure is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="pageNo != null and pageNo != ''">
+					and a.page_no = #{pageNo}
+				</when>
+				<otherwise>
+					and a.page_no is null
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="bindingForm != null and bindingForm != ''">
+					and a.binding_form = #{bindingForm}
+				</when>
+				<otherwise>
+					and a.binding_form is null
+				</otherwise>
+			</choose>
+			<if test="id != null and id != ''">
+				and a.id != #{id}
+			</if>
+		</where>
+	</select>
+
+	<!--查询种次号的条件-->
+	<sql id="tanejiNoWhereSql">
+		<if test="librarsortCode != null and librarsortCode != ''">
+			AND a.librarsort_code = #{librarsortCode}
+		</if>
+	</sql>
+
+	<!--得到最大的种次号-->
+	<select id="getMaxTanejiNo" resultType="java.lang.Integer">
+		SELECT nvl(max(to_number(a.TANEJI_NO)),0) from catalog_book_directory a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			and REGEXP_LIKE( TANEJI_NO , '(^[+-]?\d{0,}\.?\d{0,}$)')
+			<include refid="tanejiNoWhereSql"></include>
+			<if test="id != null and id != ''">
+				and a.id != #{id}
+			</if>
+		</where>
+	</select>
+
+	<!--根据分类号以及机构id查询种次号信息-->
+	<select id="getTaneJINo" resultType="java.lang.String">
+		SELECT a.TANEJI_NO FROM  catalog_book_directory a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			and a.taneji_no is not NULL
+			<if test="tanejiNo != null and tanejiNo != ''"><!---判断种次号是否唯一使用公用sql加个条件区分-->
+				AND a.taneji_no = #{tanejiNo}
+			</if>
+			<if test="id != null and id !=''">
+				AND a.id != #{id}
+			</if><!--判断种次号是否唯一的时候 需要传当前书目id 除了当前书目的-->
+			<include refid="tanejiNoWhereSql"></include>
+		</where>
+	</select>
+
+	<!--根据书目id得到书目复本数-->
+	<select id="getBookNumber" resultType="java.lang.Integer">
+		SELECT COUNT(1) FROM CATALOG_COPY c
+		WHERE c.BOOK_DIRECTORY_ID = #{id}
+		and c.del_flag = #{DEL_FLAG_NORMAL} and c.org_id = #{orgId}
+	</select>
+
+	<!--根据馆藏地名称查询出馆藏地id-->
+	<select id="findSite" parameterType="java.lang.String" resultType="com.lianyitech.modules.sys.entity.CollectionSite">
+		select * from SYS_COLLECTION_SITE t
+		where t.name = #{collectionSiteName}
+			and t.del_flag = '0'
+		 	and t.org_id = #{orgId}
+	</select>
+
+	<!--根据馆藏地名称查询出馆藏地id-->
+	<select id="findSiteByObj"  resultType="com.lianyitech.modules.sys.entity.CollectionSite">
+		select * from SYS_COLLECTION_SITE t
+		where t.name = #{collectionSiteName}
+			and t.del_flag = '0'
+			and t.org_id = #{orgId}
+	</select>
+
+	<!--根据题名查询书目ID-->
+	<select id="findId" parameterType="BookDirectory" resultType="BookDirectory">
+		select * from catalog_book_directory t where t.title = #{title} and t.del_flag = '0' and t.org_id = #{orgId}
+	</select>
+
+	<select id="queryAllDirectory" resultType="BookDirectory" >
+		select
+			t.id,t.isbn,t.title,t.author,t.publishing_name,t.publishing_time,t.page_no,t.price,t.measure,t.binding_form,t.edition
+		from catalog_book_directory t
+		where t.del_flag='0' and t.org_id=#{value}
+	</select>
+
+	<update id="updateTempByItself" parameterType="java.lang.String">
+		update ${tableName} tp
+		set tp.state = 2, tp.result = '重复的条形码！'
+		where rowid !=
+		(select max(rowid) from ${tableName} b where tp.bar_code = b.bar_code)
+		and tp.state = 0
+	</update>
+
+	<update id="updateTempByOther" parameterType="java.lang.String">
+		update ${tableName} tp set tp.state=2 ,
+		tp.result='条形码重复或与读者证号重复或该条形码已下架！'
+		where tp.state = 0
+		and exists (select 1
+		from (select c.card as barcode
+		from circulate_card c
+		inner join circulate_reader r on (c.reader_id = r.id and
+		r.del_flag = '0')
+		where c.del_flag = '0'
+		and r.org_id = #{orgId}
+		union
+		select bar_code as barcode
+		from catalog_copy
+		where del_flag = '0'
+		and org_id = #{orgId}
+		union
+		select bar_code as barcode
+		from PERI_BINDING
+		where del_flag = '0'
+		and org_id = #{orgId}
+		union
+		select t.old_bar_code as barcode
+		from CATALOG_BARCODE_RECORD t
+		where t.del_flag = '0'
+		and t.org_id = #{orgId}) t1
+		where tp.bar_code = t1.barcode)
+
+	</update>
+
+	<!--插入导入馆藏时插入的新书目-->
+	<insert id="insertBook">
+		insert into catalog_book_directory
+		(
+		ID,
+        ORG_ID,
+        ISBN,
+        TITLE,
+        SUB_TITLE,
+        TIED_TITLE,
+        PART_NAME,
+        PART_NUM,
+        SERIES_NAME,
+        AUTHOR,
+        SUB_AUTHOR,
+        SERIES_EDITOR,
+        TRANSLATOR,
+        PUBLISHING_NAME,
+        PUBLISHING_ADDRESS,
+        PUBLISHING_TIME,
+        LIBRARSORT_ID,
+        LIBRARSORT_CODE,
+        PRICE,
+        EDITION,
+        LANGUAGE,
+        MEASURE,
+        PAGE_NO,
+        BINDING_FORM,
+        BEST_AGE,
+        ATTACHMENT_NOTE,
+        SUBJECT,
+        CONTENT,
+        CREATE_BY,
+        CREATE_DATE,
+        UPDATE_BY,
+        UPDATE_DATE,
+        REMARKS,
+        DEL_FLAG,
+        TANEJI_NO,
+        ASS_NO,
+        PURPOSE,
+        MARC64,
+        BOOK_NO,
+        OLD_INDEXNUM
+        )
+		select t.BOOK_DIRECTORY_ID as id,
+		#{orgId} as ORG_ID,
+		t.isbn,
+		t.title,
+		t.sub_title,
+		t.tied_title,
+		t.part_name,
+		t.part_num,
+		t.series_name,
+		t.author,
+		t.sub_author,
+		t.series_editor,
+		t.translator,
+		t.publishing_name,
+		t.publishing_address,
+		t.publishing_time,
+		null as LIBRARSORT_ID,
+		t.librarsort_code,
+		t.price,
+		t.edition,
+		t.language,
+		t.measure,
+		t.page_no,
+		t.binding_form,
+		t.best_age,
+		t.attachment_note,
+		t.subject,
+		t.content,
+		t.create_by,
+		t.create_date,
+		t.update_by,
+		t.update_date,
+		'通过导入馆藏导入的' as remarks,
+		'0' as del_flag,
+		t.taneji_no,
+		t.ass_no,
+		t.purpose,
+		null as marc64,
+		t.book_no,
+		null as old_indexnum
+		from ${tableName} t
+		where t.state = 0
+		and t.rowid in (select max(c.rowid)
+		from ${tableName} c
+		where c.state = 0 and c.ismatch=0
+		group by c.isbn,
+       	c.title,
+       	c.author,
+       	c.librarsort_code,
+       	c.publishing_name,
+       	c.publishing_time,
+       	c.page_no,
+       	c.price,
+       	c.measure,
+       	c.binding_form,
+       	c.edition,
+       	c.attachment_note,
+       	c.publishing_address,
+       	c.subject,
+       	c.language,
+       	c.sub_title,
+       	c.tied_title,
+       	c.part_name,
+       	c.part_num,
+       	c.series_name,
+       	c.sub_author,
+       	c.series_editor,
+       	c.translator,
+       	c.best_age,
+       	c.purpose
+		)
+	</insert>
+
+	<insert id="updateTempBatch">
+		MERGE INTO ${tableName} T1
+		USING (select b.id, b.batch_no
+		from CATALOG_BATCH b
+		where b.org_id = #{orgId}
+		and b.del_flag = '0') T2
+		ON (T1.Batch_No = T2.Batch_No)
+		WHEN MATCHED THEN
+		UPDATE SET T1.Batch_Id = T2.id
+	</insert>
+
+	<insert id="updateTempSite">
+		MERGE INTO ${tableName} T1
+		USING (SELECT b.id, b.NAME
+		FROM sys_collection_site b
+		WHERE b.org_id = #{orgId}
+		AND b.del_flag = '0') T2
+		ON (T1.COLLECTION_SITE_NAME = T2.Name)
+		WHEN MATCHED THEN
+		UPDATE SET T1.Collection_Site_Id = T2.id
+	</insert>
+
+	<insert id="updateBookTemp">
+		MERGE INTO ${tableName} t2
+		USING (select max(c.id) id,
+		c.isbn,
+          c.title,
+          c.author,
+          c.librarsort_code,
+          c.publishing_name,
+          c.publishing_time,
+          c.page_no,
+          c.price,
+          c.measure,
+          c.binding_form,
+          c.edition,
+          c.attachment_note,
+          c.publishing_address,
+          c.subject,
+          c.language,
+          c.sub_title,
+          c.tied_title,
+          c.part_name,
+          c.part_num,
+          c.series_name,
+          c.sub_author,
+          c.series_editor,
+          c.translator,
+          c.best_age,
+          c.purpose
+		from catalog_book_directory c
+		where c.del_flag = '0' and (c.taneji_no||c.book_no) is not null
+		and c.org_id = #{orgId}
+		group by
+		  c.isbn,
+          c.title,
+          c.author,
+          c.librarsort_code,
+          c.publishing_name,
+          c.publishing_time,
+          c.page_no,
+          c.price,
+          c.measure,
+          c.binding_form,
+          c.edition,
+          c.attachment_note,
+          c.publishing_address,
+          c.subject,
+          c.language,
+          c.sub_title,
+          c.tied_title,
+          c.part_name,
+          c.part_num,
+          c.series_name,
+          c.sub_author,
+          c.series_editor,
+          c.translator,
+          c.best_age,
+          c.purpose) t1
+		ON (
+		   nvl(t1.isbn,' ') = nvl(t2.isbn,' ')
+		   and t1.title = t2.title
+		   and nvl(t1.author,' ') = nvl(t2.author,' ')
+		   and nvl(t1.publishing_name,' ') = nvl(t2.publishing_name,' ')
+		   and nvl(t1.publishing_time,' ') = nvl(t2.publishing_time,' ')
+		   and nvl(t1.price,0) = nvl(t2.price,0)
+		   and t1.librarsort_code = t2.librarsort_code
+		   and nvl(t1.attachment_note,' ') = nvl(t2.attachment_note,' ')
+		   and nvl(t1.publishing_address,' ') =  nvl(t2.publishing_address,' ')
+           and nvl(t1.subject,' ') = nvl(t2.subject,' ')
+           and nvl(t1.language,' ') = nvl(t2.language,' ')
+           and nvl(t1.sub_title,' ') = nvl(t2.sub_title,' ')
+           and nvl(t1.tied_title,' ') = nvl(t2.tied_title,' ')
+           and nvl(t1.part_name,' ') = nvl(t2.part_name,' ')
+           and nvl(t1.part_num,' ') = nvl(t2.part_num,' ')
+           and nvl(t1.series_name,' ')= nvl(t2.series_name,' ')
+           and nvl(t1.sub_author,' ') = nvl(t2.sub_author,' ')
+           and nvl(t1.series_editor,' ') = nvl(t2.series_editor,' ')
+           and nvl(t1.translator,' ') = nvl(t2.translator,' ')
+           and nvl(t1.best_age,' ') = nvl(t2.best_age,' ')
+           and nvl(t1.purpose,' ') = nvl(t2.purpose,' ')
+		   and nvl(t1.page_no,' ') = nvl(t2.page_no,' ')
+		   and nvl(t1.measure,' ') =  nvl(t2.measure,' ')
+		   and nvl(t1.binding_form,' ') =  nvl(t2.binding_form,' ')
+		   and nvl(t1.edition,' ') =  nvl(t2.edition,' ')
+		   )
+		WHEN MATCHED THEN
+		UPDATE SET t2.BOOK_DIRECTORY_ID = t1.id,t2.ismatch=1 where t2.ismatch=0
+	</insert>
+
+	<insert id="insertCopy">
+		insert into catalog_copy
+		(
+		ID,
+        ORG_ID,
+        BOOK_DIRECTORY_ID,
+        COLLECTION_SITE_ID,
+        BAR_CODE,
+        STATUS,
+        IS_RENEW,
+        IS_STAINED,
+        CREATE_BY,
+        CREATE_DATE,
+        UPDATE_BY,
+        UPDATE_DATE,
+        REMARKS,
+        DEL_FLAG,
+        PLACE,
+        IS_ORDER,
+        BATCH_ID,
+        BATCH_NO,
+		ASS_NO
+		)
+		select t.id,
+		t.org_id,
+		b.book_directory_id,
+		t.collection_site_id,
+		t.bar_code,
+		t.status as status,
+		t.is_renew as is_renew,
+		t.is_stained as is_stained,
+		t.create_by,
+		#{updateDate},
+		t.update_by,
+		#{updateDate},
+		'通过导入馆藏导入的' as remarks,
+		'0' as del_flag,
+		t.place,
+		t.is_order,
+		t.batch_id,
+		t.batch_no,
+		t.ass_no
+		from ${copyTemp} t
+		inner join ${bookTemp} b on t.book_id = b.id
+		where t.state = 0
+		and b.state=0 and b.ISMATCH=1
+	</insert>
+
+	<!--修改临时书目中对应馆藏复本条形码都不匹配的情况下的数据修改为不匹配-->
+	<update id="updateNotMatchBookTemp">
+		update ${bookTemp} t set t.state=2
+		 where not exists (select 1
+				  from ${copyTemp} c
+				 where c.state = 0
+				   and c.book_id = t.id)
+	</update>
+
+	<select id="findErrorListTemp" resultType="BookDirectoryForImport">
+		select
+		b.isbn,
+		b.title,
+		b.sub_title,
+		b.author,
+		b.sub_author,
+		b.edition,
+		b.publishing_address as "publishingAddress",
+		b.publishing_name as "publishingName",
+		b.publishing_time as "publishingTime",
+		b.price as "unitprice",
+		t.bar_code as "barcode",
+		b.librarsort_code as "librarsortCode",
+		b.taneji_no as "tanejiNo",
+		b.book_no as "bookNo",
+		b.ass_no as "assNo",
+		t.collection_site_name as "collectionSiteName",
+		b.measure as "measure",
+		b.page_no as "pageNo",
+		b.binding_form as "bindingForm",
+		b.binding_form_name as "bindingFormName",
+		b.content as "content",
+		b.best_age as "bestAge",
+		b.best_age_name as "bestAgeName",
+		b.purpose as "purpose",
+		b.purpose_name as "purposeName",
+		b.tied_title as "tiedTitle",
+		b.part_name as "partName",
+		b.part_num as "partNum",
+		b.series_name as "seriesName",
+		b.series_editor as "seriesEditor",
+		b.translator as "translator",
+		b.subject as "subject",
+		b.language as "language",
+		b.language_name as "languageName",
+		b.attachment_note as "attachmentNote",
+		b.batch_no as "batchNo",
+		t.RESULT||b.result as "errorinfo"
+		from ${copyTemp} t
+		left join ${bookTemp} b on t.book_id = b.id
+		where t.state = 2 or b.state=2
+	</select>
+
+	<update id="updateBookTempByRule">
+		update ${tableName}
+		   set state = 2, result = '该书目存在索书号编码规则冲突'
+		 where id in (select t.id
+						from ${tableName} t
+					left join catalog_book_directory b on b.org_Id = #{orgId}
+													  and b.del_flag = '0'
+													  and t.book_directory_id = b.id
+				   where t.ismatch = 1
+					 and t.state = 0
+					 and nvl(t.taneji_no, b.taneji_no) is not null
+					 and nvl(t.book_no, b.book_no) is not null)
+
+	</update>
+</mapper>

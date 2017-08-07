@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.ImportRecordDao">
+
+	<sql id="columns">
+		a.id AS id,
+		a.filename AS fileName,
+		a.state AS state,
+		a.finishtime AS finishTime,
+		a.successnum AS successNum,
+		a.failnum AS failNum,
+		a.errorfilename AS errorFileName,
+		a.time AS time,
+		a.createtime AS createDate,
+		a.createby AS createBy,
+		a.type AS type
+	</sql>
+
+
+
+
+	<sql id="joins">
+
+	</sql>
+
+
+
+	<sql id="queryCondition"  >
+		<if test="id != null and id !=''">
+			AND a.id=#{id}
+		</if>
+
+		<if test="createBy != null and createBy !=''">
+			AND a.createby=#{createBy}
+		</if>
+
+		<if test="type != null and type !=''">
+			AND a.type=#{type}
+		</if>
+
+		<if test="createDate != null ">
+			AND a.createtime>#{createDate}
+		</if>
+	</sql>
+
+	<!--查询-->
+	<select id="get" resultType="ImportRecord">
+		SELECT
+		<include refid="columns"/>
+		FROM SYS_IMPORT_RECORD a
+		<include refid="joins"/>
+		<where>
+			1=1 <include refid="queryCondition"/>
+		</where>
+		order by a.createtime desc
+	</select>
+
+	<!--查询列表-->
+	<select id="findList" resultType="ImportRecord">
+		SELECT
+		<include refid="columns"/>
+		FROM SYS_IMPORT_RECORD a
+		<include refid="joins"/>
+
+		<where>
+			1=1 <include refid="queryCondition"/>
+		</where>
+		order by a.createtime desc
+	</select>
+
+	<!--保存-->
+	<insert id="insert" parameterType="ImportRecord">
+		insert into SYS_IMPORT_RECORD(id,filename,state,finishtime,successnum,failnum,errorfilename,time,createtime,createby,type)
+		values (#{id},#{fileName},#{state},#{finishTime},#{successNum},#{failNum},#{errorFileName},#{time},#{createDate},#{createBy},#{type})
+	</insert>
+
+	<!--修改-->
+	<update id="update" parameterType="ImportRecord">
+		update SYS_IMPORT_RECORD set
+		state=#{state},
+		finishtime=#{finishTime},
+		successnum=#{successNum},
+		failnum=#{failNum},
+		errorfilename=#{errorFileName},
+		time=#{time},
+		progress=#{progress}
+		where id=#{id}
+	</update>
+
+
+	<!--修改-->
+	<update id="updateProgress" parameterType="ImportRecord">
+		update SYS_IMPORT_RECORD set
+		progress=#{progress}
+		where id=#{id}
+	</update>
+
+	<!--删除-->
+	<delete id="delete">
+		delete from  SYS_IMPORT_RECORD where id=#{id}
+	</delete>
+
+
+</mapper>

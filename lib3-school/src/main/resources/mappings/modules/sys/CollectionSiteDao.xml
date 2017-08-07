@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.sys.dao.CollectionSiteDao">
+
+    <sql id="collectionSiteColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.name AS "name",
+		a.stock_type AS "stockType",
+		b.label AS "stockTypeName",
+		a.stock_attr AS "stockAttr",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+        a.status AS "status"
+	</sql>
+
+    <sql id="collectionSiteJoins">
+		left join sys_dict b ON a.stock_type=b.id
+	</sql>
+
+    <select id="get" resultType="CollectionSite">
+        SELECT
+        <include refid="collectionSiteColumns"/>
+        FROM sys_collection_site a
+        <include refid="collectionSiteJoins"/>
+        WHERE a.id = #{id}
+    </select>
+
+    <select id="findList" resultType="CollectionSite">
+        SELECT
+        <include refid="collectionSiteColumns"/>
+        FROM sys_collection_site a
+        <include refid="collectionSiteJoins"/>
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            AND a.org_id = #{orgId}
+            <if test="name != null and name != ''">
+                AND a.name LIKE '%'||#{name}||'%'
+            </if>
+            <if test="stockType != null and stockType != ''">
+                AND a.stock_type = #{stockType}
+            </if>
+            <if test="beginTime != null and beginTime != ''">
+                <![CDATA[
+		       		and a.CREATE_DATE >= to_date(#{beginTime}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+            </if>
+            <if test="endTime != null and endTime != ''">
+                <![CDATA[
+		       		and a.CREATE_DATE <= to_date(#{endTime}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+            </if>
+        </where>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+            <otherwise>
+                ORDER BY a.update_date DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <insert id="insert">
+		INSERT INTO sys_collection_site(
+			id,
+			org_id,
+			name,
+			stock_type,
+			stock_attr,
+            status,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{name},
+			#{stockType},
+			#{stockAttr},
+            #{status},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+
+    <update id="update">
+		UPDATE sys_collection_site SET 	
+			name = #{name},
+			stock_type = #{stockType},
+			stock_attr = #{stockAttr},
+            status = #{status},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+    <update id="updateAll" parameterType="CollectionSite">
+        UPDATE sys_collection_site SET
+        stock_type = #{stockType},
+        stock_attr = #{stockAttr},
+        update_by = #{updateBy},
+        update_date = #{updateDate}
+        WHERE id in
+        <foreach item="ids" collection="idList" open="(" separator="," close=")">
+            #{ids}
+        </foreach>
+        and org_id = #{orgId} and del_flag = '0'
+    </update>
+
+    <update id="delete">
+        UPDATE sys_collection_site SET
+        del_flag = #{DEL_FLAG_DELETE}
+        WHERE id IN
+        <foreach item="id" collection="idList" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <select id="getName" resultType="java.lang.Integer">
+        SELECT
+        count(1)
+        FROM sys_collection_site a
+        <where>
+            a.del_flag = #{DEL_FLAG_NORMAL}
+            and  a.org_id = #{orgId}
+            <if test="name != null and name != ''">
+                and name = #{name}
+            </if>
+        </where>
+    </select>
+
+    <select id="findCopy" resultType="java.lang.Integer" parameterType="CollectionSite">
+        SELECT
+        count(a.id||b.id)
+        FROM sys_collection_site t
+        left join catalog_copy a on (a.collection_site_id=t.id and a.del_flag=#{DEL_FLAG_NORMAL} and t.org_id = a.org_id)
+        left join PERI_BINDING b on (b.collection_site_id=t.id and b.del_flag=#{DEL_FLAG_NORMAL} and b.org_id = t.org_id)
+        WHERE t.id = #{id}
+    </select>
+
+    <select id="findIdByName" resultType="String">
+        select a.id from sys_collection_site a where
+          a.name = #{name}
+          and a.org_id = #{orgId}
+          and a.del_flag = '0'
+    </select>
+    <!--插入导入馆藏时插入的新馆藏地-->
+    <insert id="insertCollectionSite">
+        insert into SYS_COLLECTION_SITE
+        (
+        id,
+        org_id,
+        name,
+        stock_type,
+        stock_attr,
+        create_by,
+        create_date,
+        update_by,
+        update_date,
+		remarks,
+		del_flag)
+        select sys_guid() as id,
+        #{orgId} as ORG_ID,
+        t.collection_site_name as name,
+        '43' as STOCK_TYPE,
+        '1' as STOCK_ATTR,
+        #{orgId} as create_by,
+        sysdate as create_date,
+        #{orgId} as update_by,
+        sysdate as update_date,
+        '通过馆藏导入生成' as remarks,
+        '0' as del_flag
+        from ${tableName} t
+        where t.state = 0
+        and t.collection_site_name is not null
+        and not exists
+        (select 1
+        from sys_collection_site b
+        where b.org_id = #{orgId}
+        and b.del_flag = '0'
+        and b.name = t.collection_site_name)
+        and t.rowid in (select max(c.rowid)
+        from ${tableName} c
+        where t.collection_site_name = c.collection_site_name
+        and c.state = 0)
+
+    </insert>
+
+    <update id="updateStatus">
+        update SYS_COLLECTION_SITE set
+        status = '1'
+        where
+        status = '0'
+       and org_id = #{orgId}
+    </update>
+</mapper>

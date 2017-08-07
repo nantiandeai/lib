@@ -1,0 +1,674 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.offline.dao.ServerCirculateLogDao">
+    <!--插入离线借阅同步记录表-->
+    <insert id="insert">
+        insert into SERVER_CIRCULATE_LOG a
+        (
+          ID,
+          CARD,
+          BAR_CODE,
+          ORG_ID,
+          OP_TYPE,
+          borrow_date,
+          return_date,
+          SHOULD_RETURN_DATE,
+          CREATE_BY,
+          CREATE_DATE,
+          STATUS,
+          SERVER_TIME_ID,
+          error_info,
+          update_date,
+          dir_type
+          )
+        values
+        (#{id}, #{card}, #{barCode}, #{orgId},#{opType},#{borrowDate},#{returnDate}, #{shouldReturnDate},#{createBy},#{createDate},#{status},#{serverTimeId},#{errorInfo},#{updateDate},#{dirType})
+    </insert>
+    <!--修改重复的归还借阅记录-->
+    <update id="update">
+        update server_circulate_log a
+        set a.RETURN_DATE=#{returnDate}<!--,a.status = '0', a.error_info = ''-->
+        where a.id = #{id}
+        and a.op_type = '0'
+        and a.borrow_date is not null
+        and a.return_date is null
+        and a.org_id = #{orgId}
+    </update>
+    <!--根据条件查询离线借阅同步记录表-->
+    <select id="getList" resultType="ServerCirculateLog">
+        SELECT t.id, t.error_info as "errorInfo"
+        FROM SERVER_CIRCULATE_LOG t
+        WHERE
+        t.org_id = #{orgId}
+        <if test="status!=null and status!=''">
+            AND t.status = #{status}
+        </if>
+        <if test="createDate!=null">
+            AND t.create_date = #{createDate}
+        </if>
+    </select>
+    <!--条形码是否在馆藏复本中，不存在则同步不通过-->
+    <update id="updateStatusByBarCode">
+        update server_circulate_log t
+        set t.status = '2', t.error_info = '该学校不存在此条形码复本或则期刊'
+        <if test="updateDate!=null">
+            ,t.SYNC_DATE=#{updateDate},t.update_date = #{updateDate}
+        </if>
+        where t.status = '0'
+        and t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        and not exists (select 1 from catalog_copy c where c.bar_code = t.bar_code and c.org_id = #{orgId} and c.del_flag='0')
+        and not exists (select 1 from peri_binding c where c.bar_code = t.bar_code and c.org_id = #{orgId} and c.del_flag='0')
+    </update>
+    <!--读者证是否存在读者证表，不存在则同步不通过-->
+    <update id="updateStatusByCard">
+        update server_circulate_log t
+        set t.status = '2', t.error_info = '该学校不存在此读者证数据'
+        <if test="updateDate!=null">
+            ,t.SYNC_DATE=#{updateDate},t.update_date = #{updateDate}
+        </if>
+        where t.status = '0' and t.card is not null
+        and t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        and not exists (select 1 from CIRCULATE_CARD ca  where  ca.card= t.card and ca.org_id = #{orgId} and ca.del_flag='0')
+    </update>
+    <!--离线客户端借出如果在web端借出的复本同步不通过-->
+    <update id="updateStatusByBorrow">
+        UPDATE server_circulate_log t
+        SET t.status = '2', t.error_info = 'web端也有在借记录，存在冲突'
+        <if test="updateDate!=null">
+            ,t.SYNC_DATE=#{updateDate},t.update_date = #{updateDate}
+        </if>
+        WHERE t.status = '0'
+        AND t.op_type = '0'
+        AND t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        AND t.return_date IS NULL
+        AND EXISTS (SELECT 1
+        FROM circulate_bill b
+        WHERE b.del_flag = '0'
+        and dir_type = t.dir_type
+        AND b.org_id = #{orgId}
+        AND b.bill_type in ('0','1')
+        AND b.return_date is null
+        AND b.status in ('01', '71')
+        AND t.bar_code = b.bar_code)
+    </update>
+    <!--往web端插入新单据（包括：历史借阅和已经借出未归还的）-->
+    <insert id="insertBill">
+        insert into circulate_bill
+        (id,
+        reader_id,
+        copy_id,
+        org_id,
+        group_id,
+        bill_type,
+        bar_code,
+        batch_no,
+        isbn,
+        LIBRARSORT_CODE,
+        TANEJI_NO,
+        ASS_NO,
+        TITLE,
+        IS_STAINED,
+        IS_RENEW,
+        IS_ORDER,
+        BORROW_DATE,
+        SHOULD_RETURN_DATE,
+        RETURN_DATE,
+        STATUS,
+        CREATE_BY,
+        CREATE_DATE,
+        UPDATE_BY,
+        UPDATE_DATE,
+        REMARKS,
+        DEL_FLAG,
+        DIR_TYPE)
+        select  t.id as "id",<!--直接用离线端的以免多个同时操作保存重复-->
+        r.id as "readerId",
+        c.id as "copyId",
+        #{orgId} as "orgId",
+        r.group_id,
+        '0' as "billType",
+        c.bar_code,
+        c.batch_no,
+        b.isbn,
+        b.librarsort_code,
+        b.taneji_no,
+        b.ass_no,
+        b.title,
+        c.is_stained,
+        c.is_renew,
+        c.is_order,
+        t.borrow_date,
+        t.should_return_date,
+        t.return_date,
+        decode(t.return_date,null,'01','10') as status,
+        #{orgId} as createBy,
+        t.update_date,
+        #{orgId} as updateBy,
+        <!--nvl(t.return_date,t.borrow_date) as updateDate,-->
+        #{updateDate} as updateDate,
+        '同步离线客户端的数据' as remarks,
+        '0' as delFlag,
+        '0' as dirType
+        from server_circulate_log t
+        inner join circulate_card ca on (ca.del_flag = '0' and
+        ca.org_id = #{orgId} and
+        ca.card = t.card)
+        inner join circulate_reader r on (r.del_flag = '0' and
+        r.org_id = #{orgId} and
+        r.id = ca.reader_id)
+        inner join catalog_copy c on (c.del_flag = '0' and c.org_id = #{orgId} and
+        c.bar_code = t.bar_code)
+        inner join catalog_book_directory b on (b.del_flag = '0' and
+        b.org_id = #{orgId} and
+        b.id = c.book_directory_id)
+        where t.status = '0'
+        and t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        and t.op_type = '0'
+        and t.borrow_date is not null
+        and t.card is not null
+    </insert>
+    <!--往web端插入新期刊新单据（包括：历史借阅和已经借出未归还的）-->
+    <insert id="insertPeriBill">
+        insert into circulate_bill
+        (id,
+        reader_id,
+        copy_id,
+        org_id,
+        group_id,
+        bill_type,
+        bar_code,
+        isbn,
+        LIBRARSORT_CODE,
+        TANEJI_NO,
+        ASS_NO,
+        TITLE,
+        IS_STAINED,
+        IS_ORDER,
+        BORROW_DATE,
+        SHOULD_RETURN_DATE,
+        RETURN_DATE,
+        STATUS,
+        CREATE_BY,
+        CREATE_DATE,
+        UPDATE_BY,
+        UPDATE_DATE,
+        REMARKS,
+        DEL_FLAG,
+        DIR_TYPE)
+        select  t.id as "id",<!--直接用离线端的以免多个同时操作保存重复-->
+        r.id as "readerId",
+        c.id as "copyId",
+        #{orgId} as "orgId",
+        r.group_id,
+        '0' as "billType",
+        c.bar_code,
+        b.issn,
+        b.librarsort_code,
+        c.BOOK_TIME_NO,
+        c.ass_no,
+        b.title,
+        c.is_stained,
+        c.is_order,
+        t.borrow_date,
+        t.should_return_date,
+        t.return_date,
+        decode(t.return_date,null,'01','10') as status,
+        #{orgId} as createBy,
+        t.update_date,
+        #{orgId} as updateBy,
+        <!--nvl(t.return_date,t.borrow_date) as updateDate,-->
+        #{updateDate} as updateDate,
+        '同步离线客户端的数据' as remarks,
+        '0' as delFlag,
+        '1' as dirType
+        from server_circulate_log t
+        inner join circulate_card ca on (ca.del_flag = '0' and
+        ca.org_id = #{orgId} and
+        ca.card = t.card)
+        inner join circulate_reader r on (r.del_flag = '0' and
+        r.org_id = #{orgId} and
+        r.id = ca.reader_id)
+        inner join peri_binding c on (c.del_flag = '0' and c.org_id = #{orgId} and
+        c.bar_code = t.bar_code)
+        inner join PERI_DIRECTORY b on (b.del_flag = '0' and
+        b.org_id = #{orgId} and
+        b.id = c.PERI_DIRECTORY_ID)
+        where t.status = '0'
+        and t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        and t.op_type = '0'
+        and t.borrow_date is not null
+        and t.card is not null
+    </insert>
+    <update id="updateSyncData">
+        update server_circulate_log t
+        set t.sync_date = #{updateDate},t.update_date = #{updateDate}, t.status = '1'
+        where t.status = '0'
+        and t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+    </update>
+    <update id="checkOfflineNotBorrow">
+        update SERVER_CIRCULATE_LOG l set l.status = '2', l.error_info = 'web端没有在借记录，存在冲突(并且还书日期不能小于借书日期)'
+        <if test="updateDate!=null">
+            ,l.SYNC_DATE=#{updateDate},l.update_date = #{updateDate}
+        </if>
+        where  l.op_type = '1'  and l.org_id = #{orgId} and l.status='0' and l.type='0'
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        and not exists(
+        select 1 from circulate_bill b
+        where b.bar_code = l.bar_code
+        and b.org_id = #{orgId}
+        and b.dir_type = l.dir_type
+        and b.status in ('01','71')
+        and b.del_flag='0'
+        and l.return_date >= b.borrow_date
+        )
+    </update>
+    <!--检查历史归还 是否在web端存在此条借阅-->
+    <update id="checkHistoryReturn">
+        update SERVER_CIRCULATE_LOG l set l.status = '2', l.error_info = 'web端没有存在此借书日期的借书记录，不能归还'
+        <if test="updateDate!=null">
+            ,l.SYNC_DATE=#{updateDate},l.update_date = #{updateDate}
+        </if>
+        where  l.op_type = '1' and l.CARD is not null  and l.org_id = #{orgId} and l.status='0' and l.type='0'
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        and not exists(
+        select 1 from circulate_bill b inner join CIRCULATE_CARD c on
+        (c.org_id = #{orgId} and c.del_flag='0' and  c.status!= '4'  and c.reader_id = b.reader_id)
+        where b.bar_code = l.bar_code
+        and c.CARD = l.card
+        and l.BORROW_DATE = b.BORROW_DATE
+        and b.org_id = #{orgId}
+        and b.dir_type = l.dir_type
+        and b.status in ('01','71')
+        and b.del_flag='0'
+        )
+    </update>
+    <!--检查归还的时候复本状态是否是借出，不是则修改不通过-->
+    <update id="checkReturnCopyStatus">
+        update SERVER_CIRCULATE_LOG l set l.status = '2', l.error_info = 'web端此复本非借出状态'
+        <if test="updateDate!=null">
+            ,l.SYNC_DATE=#{updateDate},l.update_date = #{updateDate}
+        </if>
+        where l.org_id = #{orgId}
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        and l.status = '0'
+        and l.op_type = '1'
+        and l.type='0'
+        and l.dir_type = '0'
+        and exists (
+        select 1 from catalog_copy c
+        where c.org_id = #{orgId} and c.del_flag = '0' and c.bar_code = l.bar_code and c.status!='1'
+        )
+    </update>
+    <!--检查归还的时候期刊状态是否是借出，不是则修改不通过-->
+    <update id="checkReturnPeriStatus">
+        update SERVER_CIRCULATE_LOG l set l.status = '2', l.error_info = 'web端此复本非借出状态'
+        <if test="updateDate!=null">
+            ,l.SYNC_DATE=#{updateDate},l.update_date = #{updateDate}
+        </if>
+        where l.org_id = #{orgId}
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        and l.status = '0'
+        and l.op_type = '1'
+        and l.type='0'
+        and l.dir_type = '1'
+        and exists (
+        select 1 from peri_binding c
+        where c.org_id = #{orgId} and c.del_flag = '0' and c.bar_code = l.bar_code and c.status!='1'
+        )
+    </update>
+    <!--检查只借的时候复本状态是否是在馆或者预借，不是则修改不通过-->
+    <update id="checkBorrowCopyStatus">
+        update SERVER_CIRCULATE_LOG l set l.status = '2', l.error_info = 'web端此复本非在馆状态(可能已经借出、剔旧、报废、丢失)'
+        <if test="updateDate!=null">
+            ,l.SYNC_DATE=#{updateDate},l.update_date = #{updateDate}
+        </if>
+        where l.org_id = #{orgId}
+        and l.status = '0'
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        AND l.op_type = '0'
+        and l.dir_type = '0'
+        AND l.return_date IS NULL
+        and exists (
+        select 1 from catalog_copy c
+        where c.org_id = #{orgId} and c.del_flag = '0'
+        and c.bar_code = l.bar_code and c.status not in ('0','5')
+        )
+    </update>
+
+    <!--检查只借的时候期刊状态是否是在馆或者预借，不是则修改不通过-->
+    <update id="checkBorrowPeriStatus">
+        update SERVER_CIRCULATE_LOG l set l.status = '2', l.error_info = 'web端此期刊非在馆状态(可能已经借出、剔旧、报废、丢失)'
+        <if test="updateDate!=null">
+            ,l.SYNC_DATE=#{updateDate},l.update_date = #{updateDate}
+        </if>
+        where l.org_id = #{orgId}
+        and l.status = '0'
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        AND l.op_type = '0'
+        and l.dir_type = '1'
+        AND l.return_date IS NULL
+        and exists (
+        select 1 from peri_binding c
+        where c.org_id = #{orgId} and c.del_flag = '0'
+        and c.bar_code = l.bar_code and c.status not in ('0','5')
+        )
+    </update>
+
+    <insert id="updateBillOfflineNotBorrow">
+        merge into circulate_bill t using (
+        select b.id, l.return_date,l.create_by, l.create_date  from circulate_bill b, SERVER_CIRCULATE_LOG l
+        where l.status = '0'  and l.type='0' and l.op_type = '1'
+        and b.bar_code = l.bar_code
+        and b.del_flag='0'
+        and b.org_id = #{orgId}
+        and l.org_id = #{orgId}
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        and b.status in ('01','71')
+        and b.dir_Type = l.dir_type
+        and b.id = (select max(bb.id) from circulate_bill bb where bb.bar_code = l.bar_code
+        and bb.org_id = #{orgId} and bb.status in ('01','71') and bb.del_flag='0' and bb.dir_type = b.dir_type
+        )
+        ) tmp on (t.id = tmp.id)
+        when matched then
+        update set t.return_date=tmp.return_date, t.update_by = tmp.create_by,
+        t.update_date=tmp.create_date, t.status = '10', t.REMARKS = '同步离线客户端的数据'
+    </insert>
+    <insert id="insertBorrowLog">
+        insert into CIRCULATE_LOG
+        (id,
+        Bill_Id,
+        Log_Type,
+        Create_By,
+        Create_Date,
+        Update_By,
+        Update_Date,
+        remarks,
+        Del_Flag,
+        Org_Id,
+        SOURCE)
+        select sys_guid() as "id",
+        t.id,
+        '0' as "logType",
+        #{orgId} as "createBy",
+        t.borrow_date,
+        #{orgId} as "updateBy",
+        t.borrow_date as "updateDate",
+        '同步离线客户端的数据' as remarks,
+        '0' as "delFlag",
+        #{orgId} as "orgId",
+        '1' as source
+        from circulate_bill t
+        where t.remarks = '同步离线客户端的数据'
+        and t.del_flag = '0'
+        and t.org_id = #{orgId}
+        and t.borrow_date is not null
+        and not exists (select 1
+        from circulate_log l
+        where l.del_flag = '0'
+        and l.log_type='0'
+        and l.org_id = #{orgId}
+        and t.id = l.bill_id)
+    </insert>
+    <insert id="insertReturnLog">
+        insert into CIRCULATE_LOG
+        (id,
+        Bill_Id,
+        Log_Type,
+        Create_By,
+        Create_Date,
+        Update_By,
+        Update_Date,
+        remarks,
+        Del_Flag,
+        Org_Id,
+        SOURCE)
+        select sys_guid() as "id",
+        t.id,
+        '1' as "logType",
+        #{orgId} as "createBy",
+        t.borrow_date,
+        #{orgId} as "updateBy",
+        t.borrow_date as "updateDate",
+        '同步离线客户端的数据' as remarks,
+        '0' as "delFlag",
+        #{orgId} as "orgId",
+        '1' as "source"
+        from circulate_bill t
+        where t.remarks = '同步离线客户端的数据'
+        and t.del_flag = '0'
+        and t.org_id = #{orgId}
+        and t.borrow_date is not null
+        and t.return_date is not null
+        and not exists (select 1
+        from circulate_log l
+        where l.del_flag = '0'
+        and l.log_type='1'
+        and l.org_id = #{orgId}
+        and t.id = l.bill_id)
+    </insert>
+    <update id="updateBorrowCopy">
+        UPDATE CATALOG_COPY c
+        SET c.STATUS = '1',c.REMARKS='同步离线客户端修改状态',c.UPDATE_DATE=#{updateDate}
+        WHERE c.org_id = #{orgId}
+        AND c.del_flag = '0'
+        AND c.status != '1'
+        AND c.id in (select t.copy_id
+        from circulate_bill t
+        where t.org_id = #{orgId}
+        and t.del_flag = '0'
+        and t.dir_type ='0'
+        and t.remarks = '同步离线客户端的数据'
+        and t.return_date is null)
+    </update>
+    <update id="updateBorrowPeri">
+        UPDATE PERI_BINDING c
+        SET c.STATUS = '1',c.REMARKS='同步离线客户端修改状态',c.UPDATE_DATE=#{updateDate}
+        WHERE c.org_id = #{orgId}
+        AND c.del_flag = '0'
+        AND c.status != '1'
+        AND c.id in (select t.copy_id
+        from circulate_bill t
+        where t.org_id = #{orgId}
+        and t.del_flag = '0'
+        and t.dir_type ='1'
+        and t.remarks = '同步离线客户端的数据'
+        and t.return_date is null)
+    </update>
+
+    <update id="updateReturnCopy">
+        update catalog_copy c
+        set c.status = '0',c.UPDATE_DATE=#{updateDate},c.REMARKS='同步离线客户端修改状态'
+        where c.org_id = #{orgId}
+        and c.del_flag = '0'
+        and c.status != '0'
+        and c.bar_code in (select t.bar_code
+        from server_circulate_log t
+        where t.op_type = '1'
+        and t.status = '0'
+        and t.type='0'
+        and t.dir_type='0'
+        and t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        and t.return_date is not null)
+    </update>
+    <update id="updateReturnPeri">
+        update peri_binding c
+        set c.status = '0',c.UPDATE_DATE=#{updateDate},c.REMARKS='同步离线客户端修改状态'
+        where c.org_id = #{orgId}
+        and c.del_flag = '0'
+        and c.status != '0'
+        and c.bar_code in (select t.bar_code
+        from server_circulate_log t
+        where t.op_type = '1'
+        and t.status = '0'
+        and t.dir_type='1'
+        and t.type='0'
+        and t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        and t.return_date is not null)
+    </update>
+    <select id="getCirculateLog" resultType="ServerCirculateLog">
+        select * from (select rownum rn,t1.* from (
+        SELECT t.id,t.status, t.error_info as "errorInfo"
+        FROM SERVER_CIRCULATE_LOG t
+        WHERE
+        t.org_id = #{orgId}
+        <if test="status!=null and status!=''">
+            and t.status in (${status})
+        </if>
+        <if test="type!=null and type!=''">
+            and t.type = #{type}
+        </if>
+        <if test="startDate!=null">
+            <![CDATA[and t.SYNC_DATE >= #{startDate}]]>
+        </if>
+        <if test="endDate!=null">
+            <![CDATA[and t.SYNC_DATE <= #{endDate}]]>
+        </if>
+        <![CDATA[) t1 where rownum<=#{pageSize} * #{pageNo} ) t2 where t2.rn>=((#{pageSize} * (#{pageNo} - 1 ))+1)
+		]]>
+    </select>
+    <select id="circulateLogCount" resultType="Integer">
+        SELECT count(1)
+        FROM SERVER_CIRCULATE_LOG t
+        WHERE
+        t.org_id = #{orgId}
+        <if test="status!=null and status!=''">
+            and t.status in (${status})
+        </if>
+        <if test="type!=null and type!=''">
+            and t.type = #{type}
+        </if>
+        <if test="startDate!=null">
+            <![CDATA[and t.SYNC_DATE >= #{startDate}]]>
+        </if>
+        <if test="endDate!=null">
+            <![CDATA[and t.SYNC_DATE <= #{endDate}]]>
+        </if>
+
+    </select>
+    <!--重复条形码借出记录修改为不通过-->
+    <update id="updateRepBorrow">
+        update server_circulate_log t
+        set t.status = '2', t.error_info = '此条形码重复借出记录'
+        <if test="updateDate!=null">
+            ,t.SYNC_DATE=#{updateDate},t.update_date = #{updateDate}
+        </if>
+        where t.status = '0'
+        AND t.op_type = '0'
+        AND t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        AND t.return_date IS NULL
+        AND t.borrow_date is not null
+        AND t.borrow_date != (SELECT MIN(borrow_date)<!--这里必须保证同一本书借书日期不能同一时刻-->
+        from server_circulate_log t1
+        where t1.status = '0'
+        AND t1.op_type = '0'
+        AND t1.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        AND t1.return_date IS NULL
+        and t1.borrow_date is not null
+        and t1.bar_code = t.bar_code)
+    </update>
+    <!--重复条形码只还未借记录修改为不通过-->
+    <update id="updateRepReturn">
+        update server_circulate_log t
+        set t.status = '2', t.error_info = '此条形码重复归还记录'
+        <if test="updateDate!=null">
+            ,t.SYNC_DATE=#{updateDate},t.update_date = #{updateDate}
+        </if>
+        where t.status = '0'
+        AND t.op_type = '1'
+        AND t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        AND t.return_date IS not NULL
+        AND t.borrow_date is  null
+        AND t.return_date != (SELECT MIN(t1.return_date)
+        from server_circulate_log t1
+        where t1.status = '0'
+        AND t1.op_type = '1'
+        AND t1.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t1.create_date = #{createDate}
+        </if>
+        AND t1.return_date IS not NULL
+        AND t1.borrow_date is  null
+        and t1.bar_code = t.bar_code)
+    </update>
+    <!--同步流通记录表当中存在有借的归还记录标示验证通过-->
+    <update id="updateReturnHasBorrow">
+        update server_circulate_log t
+        set t.status = '1'
+        <if test="updateDate!=null">
+            ,t.SYNC_DATE=#{updateDate},t.update_date = #{updateDate}
+        </if>
+        where t.org_id = #{orgId}
+        <if test="createDate!=null">
+            and t.create_date = #{createDate}
+        </if>
+        and t.status = '0'
+        and t.type = '0'
+        and t.op_type = '1'
+        and t.card is not null
+        and t.return_date is not null
+        and t.borrow_date is not null
+        and exists (select 1
+        from server_circulate_log l
+        where l.org_id = #{orgId}
+        <if test="createDate!=null">
+            and l.create_date = #{createDate}
+        </if>
+        and l.status = '0'
+        and l.type = '0'
+        and l.op_type = '0'
+        and l.card is not null
+        and l.return_date = t.return_date
+        and l.borrow_date = t.borrow_date
+        and l.card = t.card
+        and l.bar_code = t.bar_code
+        and l.dir_type = t.dir_type
+        )
+    </update>
+</mapper>

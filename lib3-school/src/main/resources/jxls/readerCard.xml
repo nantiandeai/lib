@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<workbook>
+    <worksheet name="Sheet1">
+
+        <section startRow="0" endRow="0">
+            <mapping cell="A1">readerCard.email</mapping>
+        </section>
+
+        <loop startRow="1" endRow="1" items="readerCards"
+              var="readerCard" varType="com.lianyitech.modules.circulate.entity.Reader">
+            <section startRow="1" endRow="1">
+                <mapping cell="A3">readerCard.card</mapping>
+                <mapping cell="B3">readerCard.name</mapping>
+                <mapping cell="C3">readerCard.readerTypeName</mapping>
+                <mapping cell="D3">readerCard.groupName</mapping>
+                <mapping cell="E3">readerCard.terminationDate</mapping>
+                <mapping cell="F3">readerCard.certName</mapping>
+                <mapping cell="G3">readerCard.certNum</mapping>
+                <mapping cell="H3">readerCard.phone</mapping>
+                <mapping cell="I3">readerCard.oldReaderId</mapping>
+            </section>
+            <loopbreakcondition>
+                <rowcheck offset="0">
+                    <cellcheck offset="0"></cellcheck>
+                </rowcheck>
+            </loopbreakcondition>
+        </loop>
+    </worksheet>
+</workbook>

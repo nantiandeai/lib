@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.NewbookNotifiyDao">
+
+	<sql id="newbookNotifiyColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.name AS "name",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.status As "status"
+	</sql>
+
+	<!--加个新书通报详情的显示字段信息-->
+	<sql id="newbookNotifiyListColumns">
+		a.id,
+       a.org_id as "orgId",
+       b.isbn as "isbn",
+       nvl(b.taneji_no,'1'),
+       b.taneji_no as "tanejiNo",
+       b.ass_no as "assNo",
+       b.librarsort_code as "librarsortCode",
+       a.bar_code as "barcode",
+       b.TITLE as "title",
+       b.author as "author",
+       b.publishing_name as "publishingName",
+       b.publishing_time as "publishingTime",
+       b.price
+	</sql>
+
+	<sql id="newbookNotifiyJoins">
+	</sql>
+
+	<sql id="newbookNotifiyListJoins">
+	LEFT JOIN CATALOG_COPY a on (t.COPY_ID = a.id and a.del_flag='0' and a.org_id = #{orgId})
+	LEFT JOIN catalog_book_directory b ON (a.book_directory_id = b.id and b.del_flag='0' and b.org_id = #{orgId})
+	</sql>
+
+	<select id="findNewbookList" resultType="NewbookNotifiy">
+		SELECT
+		<include refid="newbookNotifiyListColumns"/>
+		FROM catalog_newbook_notifiy_detail t
+		<include refid="newbookNotifiyListJoins"/>
+		left join catalog_newbook_notifiy c on (c.id = t.newbook_notifiy_id and c.del_flag='0' and c.org_id = #{orgId})
+		<where>
+			t.del_flag = #{DEL_FLAG_NORMAL}
+			AND c.id =#{id}
+			<if test="isbn != null and isbn != ''">
+				and b.isbn LIKE '%'||#{isbn}||'%'
+			</if>
+			<if test="title != null and title != ''">
+				and b.title LIKE '%'||#{title}||'%'
+			</if>
+			<if test="author != null and author != ''">
+				and b.author LIKE '%'||#{author}||'%'
+			</if>
+			<if test="publishingName != null and publishingName != ''">
+				and b.publishing_name LIKE '%'||#{publishingName}||'%'
+			</if>
+		</where>
+	</select>
+
+	<select id="countByName" resultType="java.lang.Integer">
+		SELECT count(t.name) FROM CATALOG_NEWBOOK_NOTIFIY t
+		WHERE t.name=#{name}
+		and t.del_flag = '0' and t.org_id = #{orgId}
+		<if test="id!=null and id!=''">
+			AND t.id != #{id}
+		</if>
+	</select>
+
+	<select id="findList" resultType="NewbookNotifiy">
+		SELECT
+			<include refid="newbookNotifiyColumns"/>
+		FROM catalog_newbook_notifiy a
+		<include refid="newbookNotifiyJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			<if test="name != null and name != ''">
+				AND a.name LIKE '%'||#{name}||'%'
+			</if>
+
+			<if test="createDateStart != null and createDateStart != ''">
+				<![CDATA[
+		       		and a.create_date >= to_date(#{createDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+
+			<if test="createDateEnd != null and createDateEnd != ''">
+				<![CDATA[
+		       		and a.create_date <= to_date(#{createDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+
+			<if test="id!=null and id != ''">
+				and id = #{id}
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findAllList" resultType="NewbookNotifiy">
+		SELECT
+			<include refid="newbookNotifiyColumns"/>
+		FROM catalog_newbook_notifiy a
+		<include refid="newbookNotifiyJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<insert id="insert">
+		INSERT INTO catalog_newbook_notifiy(
+			id,
+			org_id,
+			name,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			status
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{name},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{status}
+		)
+	</insert>
+
+	<update id="updateNewBookReport">
+		update catalog_newbook_notifiy set
+		<trim suffixOverrides=",">
+			<if test=" org_id != null  and  org_id != '' ">
+				org_id=#{org_id},
+			</if>
+			<if test=" name != null  and  name != '' ">
+				name=#{name},
+			</if>
+			<if test=" remarks != null  and  remarks != '' ">
+				remark=#{remarks},
+			</if>
+			<if test=" create_by != null  and  create_by != '' ">
+				create_by=#{create_by},
+			</if>
+		</trim>
+		where 1=1
+		<if test="id!= null  and  id != '' ">
+			and id=#{id}
+		</if>
+	</update>
+
+	<update id="update">
+		UPDATE catalog_newbook_notifiy SET 	
+			org_id = #{orgId},
+			name = #{name},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+
+	<update id="delete">
+		UPDATE catalog_newbook_notifiy SET
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</update>
+
+
+	<select id="getNewBookId" parameterType="Copy" resultType="String">
+		select newbook_notifiy_id
+		from catalog_newbook_notifiy_detail
+		where copy_id = #{id}
+	</select>
+
+	<update id="updateStatus" parameterType="NewbookNotifiy" >
+		UPDATE catalog_newbook_notifiy SET
+		status = #{status}
+		WHERE id = #{id}
+	</update>
+
+	<insert id="insertNewbook" parameterType="NewbookNotifiyDetail">
+		INSERT INTO catalog_newbook_notifiy_detail(
+		id,
+		newbook_notifiy_id,
+		copy_id,
+		create_by,
+		create_date,
+		update_by,
+		update_date,
+		remarks,
+		del_flag
+		) VALUES (
+		#{id},
+		#{newbookNotifiyId},
+		#{copyId},
+		#{createBy},
+		#{createDate},
+		#{updateBy},
+		#{updateDate},
+		#{remarks},
+		#{delFlag}
+		)
+	</insert>
+
+
+</mapper>

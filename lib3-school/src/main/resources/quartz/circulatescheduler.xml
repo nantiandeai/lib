@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+
+	<!-- 借阅管理-超期检测定时任务调度配置 开始 -->
+	<bean id="schlCirculateSchedulerTask" class="com.lianyitech.core.schedule.SchlCirculateScheduler" />
+
+	<bean id="schlCirculateSchedulerJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject">
+			<ref bean="schlCirculateSchedulerTask" />
+		</property>
+		<property name="targetMethod">
+			<value>execute</value>
+		</property>
+	</bean>
+
+	<bean id="schlCirculateSchedulerTrigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail">
+			<ref bean="schlCirculateSchedulerJob" />
+		</property>
+		<property name="cronExpression">
+			<value>1 * * * * ?</value>
+		</property>
+	</bean>
+
+	<bean id="schedulerFactory" autowire="no" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<ref local="schlCirculateSchedulerTrigger" />
+			</list>
+		</property>
+	</bean>
+</beans>

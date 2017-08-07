@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.lib.dao.NoticeManageDao">
+    
+	<sql id="noticeManageColumns">
+		a.id AS "id",
+		a.theme AS "theme",
+		a.content AS "content",
+		a.org_name AS "orgName",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.is_top as "IsTop"
+	</sql>
+	
+	<sql id="noticeManageJoins">
+	</sql>
+    
+	<select id="get" resultType="NoticeManage">
+		SELECT 
+			<include refid="noticeManageColumns"/>
+		FROM lib_notice_manage a
+		<include refid="noticeManageJoins"/>
+		WHERE a.id = #{id}
+	</select>
+	
+	<select id="findList" resultType="NoticeManage">
+		SELECT 
+			<include refid="noticeManageColumns"/>
+		FROM lib_notice_manage a
+		<include refid="noticeManageJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+			<if test="theme!=null and theme != ''">
+				and theme like  CONCAT('%',CONCAT(#{theme},'%'))
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	<select id="findAllList" resultType="NoticeManage">
+		SELECT 
+			<include refid="noticeManageColumns"/>
+		FROM lib_notice_manage a
+		<include refid="noticeManageJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>		
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="findIsTop" resultType="NoticeManage">
+		SELECT
+		<include refid="noticeManageColumns"/>
+		FROM lib_notice_manage a
+		<include refid="noticeManageJoins"/>
+		WHERE a.del_flag = '0' AND a.is_top='0'
+	</select>
+	
+	<insert id="insert">
+		INSERT INTO lib_notice_manage(
+			id,
+			theme,
+			content,
+			org_name,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			is_top
+		) VALUES (
+			#{id},
+			#{theme},
+			#{content},
+			#{orgName},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{IsTop}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE lib_notice_manage SET 	
+			theme = #{theme},
+			content = #{content},
+			org_name = #{orgName},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks},
+			is_top = #{IsTop}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE lib_notice_manage SET 
+			del_flag = #{DEL_FLAG_DELETE}
+		WHERE id IN
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</update>
+	
+</mapper>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.BarcodeRecordDao">
+
+    <sql id="BarcodeRecordColumns">
+        a.id AS "id",
+        a.org_id AS "orgId",
+        a.title AS "title",
+        a.old_bar_code AS "oldBarcode",
+        a.new_bar_code AS "newBarcode",
+        a.create_by AS "createBy",
+        a.create_date AS "createDate",
+        a.update_by AS "updateBy",
+        a.update_date AS "updateDate",
+        a.remarks AS "remarks",
+        a.del_flag AS "delFlag"
+    </sql>
+
+    <select id="findList" resultType="BarcodeRecord">
+        select <include refid="BarcodeRecordColumns"/>
+        from CATALOG_BARCODE_RECORD a
+        where a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+            <if test="barcode != null and barcode != ''">
+                AND (a.old_bar_code = #{barcode} OR a.new_bar_code = #{barcode})
+            </if>
+
+            <if test="title != null and title != ''">
+                AND a.title like '%'||#{title}||'%'
+            </if>
+
+            <choose>
+                <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                    ORDER BY ${page.orderBy}
+                </when>
+                <otherwise>
+                    ORDER BY a.update_date DESC
+                </otherwise>
+            </choose>
+    </select>
+
+    <select id="get" resultType="BarcodeRecord">
+        select <include refid="BarcodeRecordColumns"/>
+        from CATALOG_BARCODE_RECORD a
+        where (a.old_bar_code = #{barcode} OR a.new_bar_code = #{barcode})
+          and a.DEL_FLAG = '0' and a.org_id = #{orgId}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO CATALOG_BARCODE_RECORD(
+        id,
+        org_id,
+        title,
+        old_bar_code,
+        new_bar_code,
+        create_by,
+        create_date,
+        update_by,
+        update_date,
+        remarks,
+        del_flag
+        ) VALUES (
+        #{id},
+        #{orgId},
+        #{title},
+        #{oldBarcode},
+        #{newBarcode},
+        #{createBy},
+        #{createDate},
+        #{updateBy},
+        #{updateDate},
+        #{remarks},
+        #{delFlag}
+        )
+    </insert>
+
+</mapper>

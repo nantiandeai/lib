@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.circulate.dao.RuleDao">
+    
+	<sql id="ruleColumns">
+		a.id AS "id",
+		a.reader_type AS "readerType",
+		a.rule_name AS "ruleName",
+		a.borrow_days AS "borrowDays",
+		a.borrow_number AS "borrowNumber",
+		a.renew_days AS "renewDays",
+		a.renew_number AS "renewNumber",
+		a.bespeaking_days AS "bespeakingDays",
+		a.bespeaking_number AS "bespeakingNumber",
+		a.bespoke_days AS "bespokeDays",
+		a.bespoke_number AS "bespokeNumber",
+		a.exceed_limit AS "exceedLimit",
+		a.short_borrow_days AS "shortBorrowDays",
+		a.exceed_fine AS "exceedFine",
+		a.exceed_fine_day_amount AS "exceedFineDayAmount",
+		a.exceed_fine_max_amount AS "exceedFineMaxAmount",
+		a.exceed_auto_stop_borrow AS "exceedAutoStopBorrow",
+		a.exceed_auto_stop_days AS "exceedAutoStopDays",
+		a.loss_fine AS "lossFine",
+		a.loss_fine_multi AS "lossFineMulti",
+		a.stain_fine AS "stainFine",
+		a.stain_fine_multi AS "stainFineMulti",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.org_id AS "orgId"
+
+	</sql>
+	
+	<sql id="ruleJoins">
+	</sql>
+
+	<select id="findList" resultType="Rule">
+		SELECT
+		<include refid="ruleColumns"/>
+		FROM circulate_rule a
+		<include refid="ruleJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL}
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date DESC
+			</otherwise>
+		</choose>
+	</select>
+
+	<!--默认借阅规则-->
+	<select id="defaultRule" resultType="Rule">
+		select * from CIRCULATE_RULE a
+		where a.org_id is null
+		<if test="readerType != null and readerType != ''">
+			and a.reader_type = #{readerType}
+		</if>
+		and a.del_flag = '0'
+	</select>
+
+	<!--机构自定义借阅规则-->
+	<select id="orgRule" resultType="Rule" parameterType="Rule">
+		select * from CIRCULATE_RULE a
+		where a.org_id = #{orgId}
+		and a.reader_type = #{readerType}
+		and a.del_flag = '0'
+	</select>
+
+	<insert id="insert">
+		insert into CIRCULATE_RULE
+		(id,
+		 reader_type,
+		 rule_name,
+		 borrow_days,
+		 borrow_number,
+		 renew_days,
+		 renew_number,
+		 bespeaking_days,
+		 bespeaking_number,
+		 bespoke_days,
+		 bespoke_number,
+		 exceed_limit,
+		 short_borrow_days,
+		 exceed_fine,
+		 exceed_fine_day_amount,
+		 exceed_fine_max_amount,
+		 exceed_auto_stop_borrow,
+		 exceed_auto_stop_days,
+		 loss_fine,
+		 loss_fine_multi,
+		 stain_fine,
+		 stain_fine_multi,
+		 org_id,
+		 create_by,
+		 create_date,
+		 update_by,
+		 update_date,
+		 remarks,
+		 del_flag)
+		values(
+			#{id},
+			#{readerType},
+			#{ruleName},
+			#{borrowDays},
+			#{borrowNumber},
+			#{renewDays},
+			#{renewNumber},
+			#{bespeakingDays},
+			#{bespeakingNumber},
+			#{bespokeDays},
+			#{bespokeNumber},
+			#{exceedLimit},
+			#{shortBorrowDays},
+			#{exceedFine},
+			#{exceedFineDayAmount},
+			#{exceedFineMaxAmount},
+			#{exceedAutoStopBorrow},
+			#{exceedAutoStopDays},
+			#{lossFine},
+			#{lossFineMulti},
+			#{stainFine},
+			#{stainFineMulti},
+			#{orgId},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag}
+		)
+	</insert>
+
+	<update id="update">
+		UPDATE circulate_rule SET
+			reader_type = #{readerType},
+			rule_name = #{ruleName},
+			borrow_days = #{borrowDays},
+			borrow_number = #{borrowNumber},
+			renew_days = #{renewDays},
+			renew_number = #{renewNumber},
+			bespeaking_days = #{bespeakingDays},
+			bespeaking_number = #{bespeakingNumber},
+			bespoke_days = #{bespokeDays},
+			bespoke_number = #{bespokeNumber},
+			exceed_limit = #{exceedLimit},
+			short_borrow_days = #{shortBorrowDays},
+			exceed_fine = #{exceedFine},
+			exceed_fine_day_amount = #{exceedFineDayAmount},
+			exceed_fine_max_amount = #{exceedFineMaxAmount},
+			exceed_auto_stop_borrow = #{exceedAutoStopBorrow},
+			exceed_auto_stop_days = #{exceedAutoStopDays},
+			loss_fine = #{lossFine},
+			loss_fine_multi = #{lossFineMulti},
+			stain_fine = #{stainFine},
+			stain_fine_multi = #{stainFineMulti},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	
+	<update id="delete">
+		UPDATE circulate_rule SET 
+			del_flag = #{DEL_FLAG_DELETE},update_date = #{updateDate}
+		WHERE id = #{id}
+	</update>
+
+	<select id="findRuleOperateCountByCard" parameterType="com.lianyitech.modules.circulate.entity.CirculateDTO" resultType="map">
+		SELECT a.card,
+		a.reader_id readerId,
+		a.status as status,
+		trunc(sysdate) - trunc(a.start_date),
+		trunc(a.end_date) - trunc(sysdate),
+		a.del_flag,
+		decode(#{type},
+		'0', r.borrow_number,
+		'7', r.renew_number,
+		'5', r.bespeaking_number,
+		'6', r.bespoke_number,
+		'0') - nvl(osc.c,0) allowcount,
+		s.same,
+		r.EXCEED_LIMIT EXCEEDLIMIT
+		FROM circulate_card a left join circulate_reader rtab on (a.reader_id = rtab.id and rtab.del_flag='0' AND a.org_id=rtab.org_id)
+		LEFT JOIN circulate_rule r on r.id = #{ruleId}
+		LEFT JOIN (
+		<!--预约预借-->
+		SELECT substr(a.status, 0, 1) o, COUNT(1) c
+		FROM circulate_bill a
+		WHERE a.status IN ('51', '65')
+		AND EXISTS (
+		SELECT 1
+		FROM circulate_card c
+		WHERE a.reader_id = c.reader_id
+		AND c.card = #{card}
+		AND c.del_flag = '0'
+		AND a.org_id=c.org_id
+		)
+		AND a.org_id = #{orgId}
+		GROUP BY a.status
+		UNION ALL
+		<!--借书数-->
+		SELECT '0' o, COUNT(1) c
+		FROM circulate_bill a
+		WHERE a.status IN ('01', '71')
+		AND EXISTS (SELECT 1
+		FROM circulate_card c
+		WHERE a.reader_id = c.reader_id
+		AND c.card = #{card}
+		AND c.del_flag = '0'
+		AND c.org_id=a.org_id
+		)
+		AND a.org_id = #{orgId}
+		UNION ALL
+		<!--预借数-->
+		SELECT '7' o, COUNT(1)
+		FROM circulate_bill a
+		left join CIRCULATE_LOG l on (l.bill_id = a.id and l.del_flag = '0' and
+		l.log_type = '7' AND a.org_id=l.org_id)
+		WHERE a.status in ('71')
+		AND a.bar_code = #{barcode}
+		AND EXISTS (SELECT 1
+		FROM circulate_card c
+		WHERE a.reader_id = c.reader_id
+		AND c.card = #{card}
+		AND c.org_id = a.org_id
+		)
+		AND a.del_flag = '0'
+		AND a.org_id = #{orgId}
+		) osc
+		ON osc.o = #{type}
+		LEFT JOIN (SELECT COUNT(1) same
+		FROM circulate_card c
+		WHERE EXISTS (SELECT 1
+		FROM (select * from (
+		SELECT a.reader_id
+		FROM circulate_bill a
+		WHERE a.bar_code = #{barcode}
+		and  a.status in ('51','65')<!--多加了个条件 预约预借-->
+		<!--这里带上机构id-->
+		AND a.org_id = #{orgId}
+		ORDER BY a.create_date DESC
+		) where rownum=1) b
+		WHERE b.reader_id = c.reader_id)
+		AND c.del_flag = '0'
+		AND c.status!= '4'
+		<if test="type!=null and type!='5'.toString()"><!--不等于预约的情况下-->
+			and c.card !=#{card}
+		</if>
+		AND c.org_id=#{orgId}
+		) s<!--这里加了个card不等于当前card是判断是否该书被其他人预借-->
+		ON 1=1
+		WHERE a.card = #{card}
+		AND a.del_flag = '0'
+		AND rtab.org_id = #{orgId}
+	</select>
+
+	<select id="findRuleIdByCard" resultType="String">
+		  select id
+			   from (select t1.id
+					   from circulate_rule t1
+					  where t1.reader_type =
+							(select max(t2.reader_type)
+							   from circulate_reader t2
+							  inner join circulate_card t3
+							  on t2.id = t3.reader_id and t3.org_id=t2.org_id
+							  where t3.card = #{card} and t2.org_id = #{orgId} and t2.del_flag = '0' and t3.del_flag = '0')
+						and (t1.org_id = #{orgId} or t1.org_id is null)
+					  order by t1.org_id)
+			  where rownum = 1
+	</select>
+
+	<select id="shortDay" parameterType="java.lang.String" resultType="java.lang.Integer">
+		select short_borrow_days
+		from (select t1.short_borrow_days
+			  from circulate_rule t1
+			  where t1.reader_type =
+					(select max(t2.reader_type)
+					 from circulate_reader t2
+					 where t2.id = (select max(t.reader_id)
+									from CIRCULATE_BILL t
+									where t.status = '01'
+										  and t.org_id = #{orgId}
+										  and t.bar_code = #{barcode})
+						   and t2.org_id = #{orgId}
+						   and t2.del_flag = '0')
+					and (t1.org_id = #{orgId} or t1.org_id is null)
+			  order by t1.org_id)
+		where rownum = 1
+	</select>
+
+</mapper>

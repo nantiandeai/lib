@@ -1,0 +1,1042 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.CopyDao">
+
+	<sql id="copyColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.book_directory_id AS "bookDirectoryId",
+		a.collection_site_id AS "collectionSiteId",
+		a.bar_code AS "barcode",
+		a.batch_no AS "batchNo",
+		a.status AS "status",
+		a.is_renew AS "isRenew",
+		a.is_stained AS "isStained",
+		a.is_order AS "isOrder",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.place AS "place",
+		a.ass_no as "assNo"
+	</sql>
+	<!--加个馆藏清单的显示字段信息-->
+	<sql id="copylistColumns">
+	   a.id,
+       a.org_id as "orgId",
+       b.isbn as "isbn",
+       nvl(b.taneji_no,'1'),
+       b.taneji_no as "tanejiNo",
+	   a.ass_no as "assNo",
+       a.bar_code as "barcode",
+       b.librarsort_code as "librarsortCode",
+       b.TITLE as "title",
+       b.author as "author",
+       b.publishing_name as "publishingName",
+       b.publishing_time as "publishingTime",
+	   b.series_name as "seriesName",
+       b.price as price,
+       a.CREATE_DATE as "createDate",
+       decode(a.is_stained,1,'污损','-')as "isStained",
+       b.BOOK_NO as "bookNo",
+       c.name as "collectionSiteName",
+	   decode(a.status,0,'在馆','1','借出','2','剔旧','3','报废','4','丢失','5','预借','6','污损','在馆') as "status"
+	</sql>
+	<sql id="copyJoins">
+	</sql>
+	<!--加一个馆藏清单连接-->
+	<sql id="copylistJoins">
+		INNER JOIN catalog_book_directory b ON (b.org_id = #{orgId} and a.book_directory_id = b.id AND b.del_flag='0')
+        LEFT JOIN SYS_COLLECTION_SITE c ON (a.collection_site_id = c.id AND c.del_flag='0' and c.org_id = #{orgId})
+	</sql>
+	<select id="get" resultType="Copy">
+		SELECT
+		<include refid="copyColumns"/>
+		FROM catalog_copy a
+		<include refid="copyJoins"/>
+		WHERE a.id = #{id}
+	</select>
+
+
+
+	<!--馆藏清单 导出专用-->
+	<select id="findListByPage" resultType="Copy">
+		select * from (select rownum rn,t1.* from (
+
+		select a.*,
+		b.isbn as "isbn",
+		b.taneji_no,
+		b.taneji_no as "tanejiNo",
+		a.ass_no as "assNo",
+		b.librarsort_code as "librarsortCode",
+		b.TITLE as "title",
+		b.author as "author",
+		b.publishing_name as "publishingName",
+		b.publishing_time as "publishingTime",
+		b.series_name as "seriesName",
+		b.price as price,
+		b.BOOK_NO as "bookNo"
+		from (SELECT a.id,
+		a.org_id as "orgId",
+		a.bar_code as "barcode",
+		a.CREATE_DATE as "createDate",
+		a.book_directory_id,
+		a.collection_site_id,
+		a.org_id,
+		a.is_stained "isStained",
+		a.status as "status",
+		a.status as statusNum,
+		a.ass_no,
+		(select c.name from sys_collection_site c where c.id=a.collection_site_id and c.del_flag='0' and c.org_id=a.org_id)  collectionSiteName
+		FROM catalog_copy a
+		<where>
+			1=1
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+			<if test="type != null and type != ''">
+				and a.status in (${type})
+			</if>
+			<if test="isCirculation != null and isCirculation != '' and isCirculation=='0'.toString()">
+				AND exists (select distinct(f.copy_id) from circulate_bill f where f.org_id = #{orgId} and f.copy_id = a.id)
+			</if>
+			<if test="isCirculation != null and isCirculation != '' and isCirculation=='1'.toString()">
+				and not	exists (select distinct(f.copy_id) from circulate_bill f where f.org_id = #{orgId} and f.copy_id = a.id)
+			</if>
+			<choose>
+				<when test="startBarCode != null and startBarCode != '' and endBarCode != null and endBarCode != ''">
+					<![CDATA[
+		       		and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{startBarCode})
+                    and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{endBarCode})
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startBarCode}, '[[:alpha:]]+'), '0')
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endBarCode}, '[[:alpha:]]+'), '0')
+		         ]]>
+				</when>
+				<when test="startBarCode != null and startBarCode != ''">
+					and a.bar_code = #{startBarCode}
+				</when>
+				<when test="endBarCode != null and endBarCode != ''">
+					and a.bar_code = #{endBarCode}
+				</when>
+			</choose>
+			<if test="place != null and place != ''">
+				and a.place LIKE '%'||#{place}||'%'
+			</if>
+
+			<if test="createDateStart != null and createDateStart != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE >= to_date(#{createDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="createDateEnd != null and createDateEnd != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE <= to_date(#{createDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="batchNo != null and batchNo != ''">
+				and a.batch_no = #{batchNo}
+			</if>
+			<if test="isStained != null and isStained != ''">
+				and a.is_stained = #{isStained}
+			</if>
+			<if test="collectionSiteId != null and collectionSiteId != ''">
+				and a.collection_site_id = #{collectionSiteId}
+			</if>
+
+			<![CDATA[
+			and a.del_flag = #{DEL_FLAG_NORMAL} and a.update_date<sysdate + 1 	and a.org_id = #{orgId}
+			]]>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+
+			</when>
+			<otherwise>
+				ORDER BY a.update_date desc
+			</otherwise>
+		</choose>) a
+		INNER JOIN catalog_book_directory b ON  a.book_directory_id = b.id AND b.del_flag='0'and b.org_id=#{orgId}
+		<where>
+			1=1
+			<if test="librarsortCode != null and librarsortCode != ''">
+				and b.librarsort_code LIKE '%'||#{librarsortCode}||'%'
+			</if>
+
+			<if test="isbn != null and isbn != ''">
+				and b.isbn LIKE '%'||#{isbn}||'%'
+			</if>
+			<if test="title != null and title != ''">
+				and b.title LIKE '%'||#{title}||'%'
+			</if>
+			<if test="author != null and author != ''">
+				and b.author LIKE '%'||#{author}||'%'
+			</if>
+			<if test="publishingName != null and publishingName != ''">
+				and b.publishing_name LIKE '%'||#{publishingName}||'%'
+			</if>
+			<if test="seriesName != null and seriesName != ''">
+				and b.SERIES_NAME LIKE '%'||#{seriesName}||'%'
+			</if>
+			<if test="publishingTime != null and publishingTime != ''">
+				and b.publishing_time LIKE '%'||#{publishingTime}||'%'
+			</if>
+		</where>
+
+		<![CDATA[
+			) t1 where rownum<=#{pageSize} * #{pageNo} ) t2 where t2.rn>=((#{pageSize} * (#{pageNo} - 1 ))+1)
+		]]>
+	</select>
+
+	<select id="findList" resultType="Copy">
+		select
+		a.org_id as "orgId",
+		a.bar_code as "barcode",
+		a.CREATE_DATE as "createDate",
+		a.book_directory_id,
+		a.collection_site_id,
+		a.id,
+		a.is_stained isStained,
+		a.status as status,
+		a.status as statusNum,
+		b.isbn as "isbn",
+		b.taneji_no,
+		b.taneji_no as "tanejiNo",
+		a.ass_no as "assNo",
+		b.librarsort_code as "librarsortCode",
+		b.TITLE as "title",
+		b.author as "author",
+		b.publishing_name as "publishingName",
+		b.publishing_time as "publishingTime",
+		b.series_name as "seriesName",
+		b.price as price,
+		a.collectionSiteName,
+		b.BOOK_NO as "bookNo"
+		from (SELECT /*+INDEX(a IDX_CATALOG_2)*/a.id,
+		a.org_id ,
+		a.bar_code ,
+		a.CREATE_DATE ,
+		a.book_directory_id,
+		a.collection_site_id,
+		a.is_stained  ,
+		a.status as status,
+		(select c.name from sys_collection_site c where c.id=a.collection_site_id and c.del_flag='0' and c.org_id=a.org_id)  collectionSiteName,
+		a.ass_no
+		FROM catalog_copy a
+		<where>
+			1=1
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+			<if test="type != null and type != ''">
+				and a.status in (${type})
+			</if>
+			<if test="isCirculation != null and isCirculation != '' and isCirculation=='0'.toString()">
+				AND exists (select distinct(f.copy_id) from circulate_bill f where f.org_id = #{orgId} and f.copy_id = a.id)
+			</if>
+			<if test="isCirculation != null and isCirculation != '' and isCirculation=='1'.toString()">
+				and not	exists (select distinct(f.copy_id) from circulate_bill f where f.org_id = #{orgId} and f.copy_id = a.id)
+			</if>
+			<choose>
+				<when test="startBarCode != null and startBarCode != '' and endBarCode != null and endBarCode != ''">
+					<![CDATA[
+		       		and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{startBarCode})
+                    and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{endBarCode})
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startBarCode}, '[[:alpha:]]+'), '0')
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endBarCode}, '[[:alpha:]]+'), '0')
+		         ]]>
+				</when>
+				<when test="startBarCode != null and startBarCode != ''">
+					and a.bar_code = #{startBarCode}
+				</when>
+				<when test="endBarCode != null and endBarCode != ''">
+					and a.bar_code = #{endBarCode}
+				</when>
+			</choose>
+			<if test="place != null and place != ''">
+				and a.place LIKE '%'||#{place}||'%'
+			</if>
+
+			<if test="createDateStart != null and createDateStart != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE >= to_date(#{createDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="createDateEnd != null and createDateEnd != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE <= to_date(#{createDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="batchNo != null and batchNo != ''">
+				and a.batch_no = #{batchNo}
+			</if>
+			<if test="isStained != null and isStained != ''">
+				and a.is_stained = #{isStained}
+			</if>
+
+			<if test="collectionSiteId != null and collectionSiteId != ''">
+				and a.collection_site_id = #{collectionSiteId}
+			</if>
+			<![CDATA[
+				and a.del_flag = #{DEL_FLAG_NORMAL} and a.update_date<sysdate+1 and a.org_id = #{orgId}
+			]]>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+
+			</when>
+			<otherwise>
+				ORDER BY a.update_date desc
+			</otherwise>
+		</choose>) a
+		INNER JOIN catalog_book_directory b ON (a.book_directory_id = b.id AND b.del_flag='0' and b.org_id=#{orgId})
+		<where>
+			b.org_id=#{orgId}
+			<if test="librarsortCode != null and librarsortCode != ''">
+				and b.librarsort_code LIKE '%'||#{librarsortCode}||'%'
+			</if>
+
+			<if test="isbn != null and isbn != ''">
+				and b.isbn LIKE '%'||#{isbn}||'%'
+			</if>
+			<if test="title != null and title != ''">
+				and b.title LIKE '%'||#{title}||'%'
+			</if>
+			<if test="author != null and author != ''">
+				and b.author LIKE '%'||#{author}||'%'
+			</if>
+			<if test="publishingName != null and publishingName != ''">
+				and b.publishing_name LIKE '%'||#{publishingName}||'%'
+			</if>
+			<if test="seriesName != null and seriesName != ''">
+				and b.SERIES_NAME LIKE '%'||#{seriesName}||'%'
+			</if>
+			<if test="publishingTime != null and publishingTime != ''">
+				and b.publishing_time LIKE '%'||#{publishingTime}||'%'
+			</if>
+		</where>
+
+		<if test="page !=null and page.orderBy != null and page.orderBy != ''">
+			ORDER BY ${page.orderBy}, a.rowid
+		</if>
+	</select>
+
+	<!--馆藏清单-->
+	<select id="findList2" resultType="Copy">
+		SELECT
+		<include refid="copylistColumns"/>,
+		a.status as statusNum
+		FROM catalog_copy a
+		<include refid="copylistJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			<if test="collectionSiteId != null and collectionSiteId != ''">
+				and c.id = #{collectionSiteId}
+			</if>
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+			<if test="type != null and type != ''">
+				and a.status in (${type})
+			</if>
+			<choose>
+				<when test="startBarCode != null and startBarCode != '' and endBarCode != null and endBarCode != ''">
+					<![CDATA[
+		       		and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{startBarCode})
+                    and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{endBarCode})
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startBarCode}, '[[:alpha:]]+'), '0')
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endBarCode}, '[[:alpha:]]+'), '0')
+		         ]]>
+				</when>
+				<when test="startBarCode != null and startBarCode != ''">
+					and a.bar_code = #{startBarCode}
+				</when>
+				<when test="endBarCode != null and endBarCode != ''">
+					and a.bar_code = #{endBarCode}
+				</when>
+			</choose>
+			<if test="place != null and place != ''">
+				and a.place LIKE '%'||#{place}||'%'
+			</if>
+			<if test="librarsortCode != null and librarsortCode != ''">
+				and b.librarsort_code LIKE '%'||#{librarsortCode}||'%'
+			</if>
+			<if test="createDateStart != null and createDateStart != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE >= to_date(#{createDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="createDateEnd != null and createDateEnd != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE <= to_date(#{createDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="batchNo != null and batchNo != ''">
+				and a.batch_no = #{batchNo}
+			</if>
+			<if test="isStained != null and isStained != ''">
+				and a.is_stained = #{isStained}
+			</if>
+			<if test="isbn != null and isbn != ''">
+				and b.isbn LIKE '%'||#{isbn}||'%'
+			</if>
+			<if test="title != null and title != ''">
+				and b.title LIKE '%'||#{title}||'%'
+			</if>
+			<if test="author != null and author != ''">
+				and b.author LIKE '%'||#{author}||'%'
+			</if>
+			<if test="publishingName != null and publishingName != ''">
+				and b.publishing_name LIKE '%'||#{publishingName}||'%'
+			</if>
+			<if test="seriesName != null and seriesName != ''">
+				and b.SERIES_NAME LIKE '%'||#{seriesName}||'%'
+			</if>
+			<if test="publishingTime != null and publishingTime != ''">
+				and b.publishing_time LIKE '%'||#{publishingTime}||'%'
+			</if>
+
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}, a.rowid
+			</when>
+			<otherwise>
+				ORDER BY a.update_date desc ,a.rowid
+			</otherwise>
+		</choose>
+	</select>
+
+	<!--丢失清单,报废清单,剔旧清单查询sql-->
+	<select id="findScrapList" resultType="Copy">
+		SELECT
+		<include refid="copylistColumns"/>,
+		to_char(e.update_date, 'yyyy-mm-dd') as "loseDate",
+		to_char(e.update_date, 'yyyy-mm-dd') as "scrapDate",
+		to_char(e.update_date, 'yyyy-mm-dd') as "weedingDate",
+		to_char(e.update_date, 'yyyy-mm-dd') as "stainsDate"
+		FROM catalog_copy a
+		<include refid="copylistJoins"/>
+		LEFT JOIN circulate_bill e on (e.bar_code = a.bar_code
+		and e.del_flag =#{DEL_FLAG_NORMAL} and e.org_id = #{orgId}
+		<if test="type != null and type != ''"><!--以馆藏状态为准有的数据从2.0抽取过来是不存在单据的-->
+			and e.status=#{type}
+		</if>
+		)
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			<if test="status != null and status != ''">
+				and a.status=#{status}
+			</if>
+			<choose>
+				<when test="startBarCode != null and startBarCode != '' and endBarCode != null and endBarCode != ''">
+					<![CDATA[
+		       		and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{startBarCode})
+                    and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{endBarCode})
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startBarCode}, '[[:alpha:]]+'), '0')
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endBarCode}, '[[:alpha:]]+'), '0')
+		         ]]>
+				</when>
+				<when test="startBarCode != null and startBarCode != ''">
+					and a.bar_code = #{startBarCode}
+				</when>
+				<when test="endBarCode != null and endBarCode != ''">
+					and a.bar_code = #{endBarCode}
+				</when>
+			</choose>
+			<if test="place != null and place != ''">
+				and a.place LIKE '%'||#{place}||'%'
+			</if>
+			<if test="createDateStart != null and createDateStart != ''">
+				<![CDATA[
+		       		and a.create_date >= to_date(#{createDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="createDateEnd != null and createDateEnd != ''">
+				<![CDATA[
+		       		and a.create_date <= to_date(#{createDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="scrapDateStart != null and scrapDateStart != ''">
+				<![CDATA[
+		       		and e.update_date >= to_date(#{scrapDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="scrapDateEnd != null and scrapDateEnd != ''">
+				<![CDATA[
+		       		and e.update_date <= to_date(#{scrapDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="loseDateStart != null and loseDateStart != ''">
+				<![CDATA[
+		       		and e.update_date >= to_date(#{loseDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="loseDateEnd != null and loseDateEnd != ''">
+				<![CDATA[
+		       		and e.update_date <= to_date(#{loseDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="weedingDateStart != null and weedingDateStart != ''">
+				<![CDATA[
+		       		and e.update_date >= to_date(#{weedingDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="weedingDateEnd != null and weedingDateEnd != ''">
+				<![CDATA[
+		       		and e.update_date <= to_date(#{weedingDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="stainsDateStart != null and stainsDateStart != ''">
+				<![CDATA[
+		       		and e.update_date >= to_date(#{stainsDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="stainsDateEnd != null and stainsDateEnd != ''">
+				<![CDATA[
+		       		and e.update_date <= to_date(#{stainsDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="isbn != null and isbn != ''">
+				and b.isbn LIKE '%'||#{isbn}||'%'
+			</if>
+			<if test="title != null and title != ''">
+				and b.title LIKE '%'||#{title}||'%'
+			</if>
+			<if test="author != null and author != ''">
+				and b.author LIKE '%'||#{author}||'%'
+			</if>
+			<if test="publishingName != null and publishingName != ''">
+				and b.publishing_name LIKE '%'||#{publishingName}||'%'
+			</if>
+			<if test="seriesName != null and seriesName != ''">
+				and b.SERIES_NAME LIKE '%'||#{seriesName}||'%'
+			</if>
+		</where>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}
+			</when>
+			<otherwise>
+				ORDER BY a.update_date desc
+			</otherwise>
+		</choose>
+	</select>
+
+	<select id="newbookReportList" resultType="Copy">
+		SELECT
+		<include refid="copylistColumns"/>
+		FROM catalog_copy a
+		<include refid="copylistJoins"/>
+		<where>
+			a.del_flag = '0' and a.org_id = #{orgId}
+			<choose>
+				<when test="startBarCode != null and startBarCode != '' and endBarCode != null and endBarCode != ''">
+					<![CDATA[
+		       		and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{startBarCode})
+                    and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{endBarCode})
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startBarCode}, '[[:alpha:]]+'), '0')
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endBarCode}, '[[:alpha:]]+'), '0')
+		         ]]>
+				</when>
+				<when test="startBarCode != null and startBarCode != ''">
+					and a.bar_code = #{startBarCode}
+				</when>
+				<when test="endBarCode != null and endBarCode != ''">
+					and a.bar_code = #{endBarCode}
+				</when>
+			</choose>
+			<if test="librarsortCode != null and librarsortCode != ''">
+				and b.librarsort_code LIKE '%'||#{librarsortCode}||'%'
+			</if>
+			<if test="createDateStart != null and createDateStart != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE >= to_date(#{createDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="createDateEnd != null and createDateEnd != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE <= to_date(#{createDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="batchId != null and batchId != ''">
+				and a.batch_id = #{batchId}
+			</if>
+		</where>
+	</select>
+
+	<select id="findAllList" resultType="Copy">
+		SELECT
+		<include refid="copylistColumns"/>
+		FROM catalog_copy a
+		<include refid="copylistJoins"/>
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			and (a.status != '2' and a.status != '3'and a.status !='4')
+			<if test="collectionSiteName != null and collectionSiteName != ''">
+				and c.NAME = #{collectionSiteName}
+			</if>
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+			<choose>
+				<when test="startBarCode != null and startBarCode != '' and endBarCode != null and endBarCode != ''">
+					<![CDATA[
+		       		and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{startBarCode})
+                    and to_number(REGEXP_SUBSTR(a.bar_code, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endBarCode}, '[[:digit:]]+')) and length(a.bar_code) = length(#{endBarCode})
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startBarCode}, '[[:alpha:]]+'), '0')
+                    and nvl(REGEXP_SUBSTR(a.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endBarCode}, '[[:alpha:]]+'), '0')
+		         ]]>
+
+				</when>
+				<when test="startBarCode != null and startBarCode != ''">
+					and a.bar_code = #{startBarCode}
+				</when>
+				<when test="endBarCode != null and endBarCode != ''">
+					and a.bar_code = #{endBarCode}
+				</when>
+			</choose>
+			<if test="place != null and place != ''">
+				and a.place LIKE '%'||#{place}||'%'
+			</if>
+			<if test="librarsortCode != null and librarsortCode != ''">
+				and b.librarsort_code LIKE '%'||#{librarsortCode}||'%'
+			</if>
+			<if test="createDateStart != null and createDateStart != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE >= to_date(#{createDateStart}||' 00:00:00','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="createDateEnd != null and createDateEnd != ''">
+				<![CDATA[
+		       		and a.CREATE_DATE <= to_date(#{createDateEnd}||' 23:59:59','yyyy-MM-dd hh24.mi.ss')
+		         ]]>
+			</if>
+			<if test="isbn != null and isbn != ''">
+				and b.isbn LIKE '%'||#{isbn}||'%'
+			</if>
+			<if test="title != null and title != ''">
+				and b.title LIKE '%'||#{title}||'%'
+			</if>
+			<if test="author != null and author != ''">
+				and b.author LIKE '%'||#{author}||'%'
+			</if>
+			<if test="publishingName != null and publishingName != ''">
+				and b.publishing_name LIKE '%'||#{publishingName}||'%'
+			</if>
+			<if test="isStained != null and isStained != ''">
+				and a.is_stained = #{isStained}
+			</if>
+			<if test="publishingTime != null and publishingTime != ''">
+				and b.publishing_time = #{publishingTime}
+			</if>
+			<if test="batchNo != null and batchNo != ''">
+				and a.batch_no = #{batchNo}
+			</if>
+			<if test="libSortCodeList != null  and libSortCodeList.size() > 0">
+				and SUBSTR(b.librarsort_code, 0, 1) in
+				<foreach item="librarsortCode" index="index" collection="libSortCodeList"
+						 open="(" separator="," close=")">
+					#{librarsortCode}
+				</foreach>
+			</if>
+		<choose>
+			<when test="page !=null and page.orderBy != null and page.orderBy != ''">
+				ORDER BY ${page.orderBy}, a.rowid
+			</when>
+			<otherwise>
+				order by b.librarsort_code, a.rowid
+			</otherwise>
+		</choose>
+		</where>
+	</select>
+
+
+	
+	<insert id="insert">
+		INSERT INTO catalog_copy(
+			id,
+			org_id,
+			book_directory_id,
+			collection_site_id,
+			bar_code,
+			batch_id,
+			status,
+			is_renew,
+			is_stained,
+			is_order,
+			create_by,
+			create_date,
+			update_by,
+			update_date,
+			remarks,
+			del_flag,
+			place,
+			ass_no
+		) VALUES (
+			#{id},
+			#{orgId},
+			#{bookDirectoryId},
+			#{collectionSiteId},
+			#{barcode},
+			#{batchId},
+			decode(#{status},'','0',null,'0',#{status}),
+			#{isRenew},
+			#{isStained},
+			#{isOrder},
+			#{createBy},
+			#{createDate},
+			#{updateBy},
+			#{updateDate},
+			#{remarks},
+			#{delFlag},
+			#{place},
+			#{assNo}
+		)
+	</insert>
+	
+	<update id="update">
+		UPDATE catalog_copy SET 	
+			collection_site_id = #{collectionSiteId},
+			batch_id = #{batchId},
+			update_by = #{updateBy},
+			update_date = #{updateDate},
+			remarks = #{remarks}
+		WHERE id = #{id}
+	</update>
+	<!--为了能个通用此删除稍微做了修改-->
+	<update id="delete">
+		UPDATE catalog_copy SET 
+			del_flag = #{DEL_FLAG_DELETE},update_date = #{updateDate}
+		WHERE 1=1
+		<choose>
+			<when test="bookDirectoryId !=null and bookDirectoryId != ''">
+				and book_directory_id = #{bookDirectoryId}
+			</when>
+			<otherwise>
+				and id IN
+				<foreach item="id" collection="idList" open="(" separator="," close=")">
+					#{id}
+				</foreach>
+			</otherwise>
+		</choose>
+	</update>
+
+	<select id="findCopyByBatch" resultType="Copy" parameterType="Batch">
+		select
+		<include refid="copyColumns"/>
+		from
+		catalog_copy a
+		where
+		a.batch_no = #{batchNo}
+	</select>
+
+	<select id="getCount" resultType="java.lang.Integer">
+		select count(1) from catalog_copy a
+		<where>
+			a.del_flag = #{DEL_FLAG_NORMAL} and a.org_id = #{orgId}
+			<if test="bookDirectoryId != null and bookDirectoryId != ''">
+				and a.BOOK_DIRECTORY_ID = #{bookDirectoryId}
+			</if>
+			<if test="collectionSiteId != null and collectionSiteId != ''">
+				and a.COLLECTION_SITE_ID = #{collectionSiteId}
+			</if>
+			<if test="status != null and status != ''">
+				and a.status = #{status}
+			</if>
+		</where>
+	</select>
+
+	<select id="findLibraryCopyList" resultType="com.lianyitech.modules.catalog.entity.LibraryCopy">
+		select
+		a.id,
+		a.status as status,
+		a.book_directory_id as bookDirectoryId,
+		c.librarsort_code as librarsortCode,
+		c.taneji_no as tanejiNo,
+		a.ass_no as assNo,
+		c.book_no AS bookNo,
+		a.bar_code as barcode,
+		b.batch_no as batchNo,
+		b.id as batchId,
+		d.name as siteName,
+		d.id as siteId,
+		trunc(a.create_date) as inLibraryDate
+		from
+		catalog_copy a
+		left join catalog_batch b on (a.batch_id = b.id and b.org_id= #{orgId} and b.del_flag='0')
+		left join catalog_book_directory c on (a.book_directory_id = c.id and c.org_id= #{orgId} and c.del_flag = '0')
+		left join sys_collection_site d on  (d.id=a.collection_site_id and d.org_id= #{orgId} and d.del_flag='0')
+		where
+		a.del_flag = '0' and a.org_id = #{orgId}
+		<if test="id != null and id != ''">
+			and
+			c.id = #{id}
+		</if>
+		<if test="status != null and  status !='' ">
+			and a.status in (${status})
+		</if>
+	</select>
+
+	<!--绑定馆藏地下拉框-->
+	<select id="getAllSiteName" parameterType="Map" resultType="com.lianyitech.modules.sys.entity.CollectionSite">
+		SELECT a.id          AS "id",
+               a.org_id      AS "orgId",
+               a.name        AS "name",
+               a.stock_type  AS "stockType",
+               b.label       AS "stockTypeName",
+               a.stock_attr  AS "stockAttr",
+			   a.status      AS "status",
+               a.create_by   AS "createBy",
+               a.create_date AS "createDate",
+               a.update_by   AS "updateBy",
+               a.update_date AS "updateDate",
+               a.remarks     AS "remarks",
+               a.del_flag    AS "delFlag"
+          FROM sys_collection_site a
+          left join sys_dict b
+            ON a.stock_type = b.id
+         WHERE a.del_flag = '0' and a.org_id = #{orgId}
+         ORDER BY a.update_date DESC
+	</select>
+
+	<!--绑定批次下拉框-->
+	<select id="getAllBatchNo" resultType="com.lianyitech.modules.catalog.entity.Batch">
+		select t.id,t.batch_no,t.status
+		from CATALOG_BATCH t
+		where t.del_flag = '0'  and t.ORG_ID = #{orgId}
+		<if test="type != null and type != ''">
+		  and t.TYPE = #{type}
+		</if>
+	</select>
+
+	<select id="findByBarCode" parameterType="Copy" resultType="Copy">
+		select <include refid="copyColumns"/>
+			,s.STOCK_ATTR as "stockAttr",b.price,b.publishing_time publishingTime
+		  from catalog_copy a inner join catalog_book_directory b on a.book_directory_id=b.id
+		 left join SYS_COLLECTION_SITE s on (a.collection_site_id = s.id and s.del_flag='0' and s.org_id=#{orgId})
+		 where a.bar_code = #{barcode} and a.del_flag = '0' and a.org_id = #{orgId}
+		<if test="status != null and  status !='' ">
+			and a.status in (${status})
+		</if>
+		AND rownum=1
+	</select>
+
+	<update id="updateByBillType" parameterType="Map" >
+		update catalog_copy c
+		   set c.status     = decode(#{type},
+									 '0', '1',
+									 '1', '0',
+									 '2', '4',
+									 '3', '2',
+									 '4', '3',
+									 '6', '5',
+									 '8', '6',
+									 '10', '0',
+									 c.status),
+			   c.is_renew   = decode(#{type}, '7', '1','1','', c.is_renew),
+			   c.is_stained = decode(#{type}, '8', '1', c.is_stained),
+																<!--加了个判断 ，如果取消预约9那么改成取消0-->
+			   c.is_order   = decode(#{type}, '5', '1','6','0','9','0', c.is_order),<!--如果是预借的情况下从预约自动变成预借修改此状态为0-->
+			   c.UPDATE_BY =#{updateBy}, <!--修改人-->
+			   c.UPDATE_DATE = #{updateDate} <!--修改时间为当前时间-->
+		 where c.bar_code = #{barcode} and c.del_flag='0'  AND c.org_id = #{orgId}
+	</update>
+
+	<!--判断复本信息下是否有流通记录-->
+	<select id="checkBillByCopy" parameterType="java.util.Map" resultType="java.lang.Integer">
+		select count(*)
+		  from CATALOG_COPY c
+		  inner join CIRCULATE_BILL b
+			on (c.id = b.copy_id and b.org_id = #{orgId} and b.del_flag='0')
+		  inner join CATALOG_BOOK_DIRECTORY d
+			on (c.book_directory_id = d.id and d.del_flag='0' and c.org_id = #{orgId})
+		 where c.del_flag = '0'
+			and c.org_id=#{orgId}
+		   and c.id in
+		<foreach item="id" collection="idList" open="(" separator="," close=")">
+			#{id}
+		</foreach>
+	</select>
+
+	<select id="findStatusAndStockById" resultType="string" parameterType="LibraryCopy">
+		select c.status || s.stock_attr from CATALOG_COPY c, sys_collection_site s
+		 where c.id = #{id}
+		   and s.id = #{siteId}
+		   and c.del_flag = '0'
+		   and s.del_flag = '0'
+		   and c.org_id = #{orgId}
+		   and s.org_id = #{orgId}
+	</select>
+
+	<!--根据id修改复本馆藏地信息-->
+	<update id="updateCopySiteByIds" parameterType="Copy" >
+		update catalog_copy t set collection_site_id = #{siteId},update_date = #{updateDate}
+		where t.id IN
+		<foreach item="ids" collection="idList" open="(" separator="," close=")">
+			#{ids}
+		</foreach>
+		<!--以免传的id为非本学校下和状态为报废的 限制下机构和状态-->
+		and t.org_Id=#{orgId} and t.status in (${type}) and t.del_flag='0'
+	</update>
+	<!--一键全选修改本学校下所选条件的复本的馆藏地-->
+	<update id="updateCopySiteByCon" parameterType="Copy" >
+		update catalog_copy t set collection_site_id = #{siteId},update_date=#{updateDate}
+		where t.org_Id=#{orgId} and t.status in (${type}) and t.del_flag='0'
+		<!--以下是条件框筛选条件-->
+		<if test="collectionSiteId != null and collectionSiteId != ''">
+			and t.collection_site_id = #{collectionSiteId}
+		</if>
+		<if test="status != null and status != ''">
+			and t.status = #{status}
+		</if>
+		<choose>
+			<when test="startBarCode != null and startBarCode != '' and endBarCode != null and endBarCode != ''">
+				<![CDATA[
+			 	and to_number(REGEXP_SUBSTR(t.bar_code, '[[:digit:]]+')) >= to_number(REGEXP_SUBSTR(#{startBarCode}, '[[:digit:]]+')) and length(t.bar_code) = length(#{startBarCode})
+                and to_number(REGEXP_SUBSTR(t.bar_code, '[[:digit:]]+')) <= to_number(REGEXP_SUBSTR(#{endBarCode}, '[[:digit:]]+')) and length(t.bar_code) = length(#{endBarCode})
+                and nvl(REGEXP_SUBSTR(t.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{startBarCode}, '[[:alpha:]]+'), '0')
+                and nvl(REGEXP_SUBSTR(t.bar_code, '[[:alpha:]]+'), '0') = nvl(REGEXP_SUBSTR(#{endBarCode}, '[[:alpha:]]+'), '0')
+				]]>
+			</when>
+			<when test="startBarCode != null and startBarCode != ''">
+				and t.bar_code = #{startBarCode}
+			</when>
+			<when test="endBarCode != null and endBarCode != ''">
+				and t.bar_code = #{endBarCode}
+			</when>
+		</choose>
+	</update>
+
+	<!--条形码置换-->
+	<update id="updateBarcode">
+		UPDATE catalog_copy SET
+		bar_code = #{newBarcode},
+		update_by = #{updateBy},
+		update_date = #{updateDate}
+		WHERE bar_code = #{oldBarcode} AND org_id = #{orgId}
+
+	</update>
+
+	<!--根据条码查出当条复本信息-->
+	<select id="getCopy" resultType="LibraryCopy" parameterType="LibraryCopy">
+		SELECT
+		a.id,
+		a.org_id as "orgId",
+		b.isbn as "isbn",
+		nvl(b.taneji_no,'1'),
+		b.taneji_no as "tanejiNo",
+		a.ass_no as "assNo",
+		a.bar_code as "barcode",
+		b.librarsort_code as "librarsortCode",
+		b.TITLE as "title",
+		b.author as "author",
+		b.publishing_name as "publishingName",
+		b.publishing_time as "publishingTime",
+		b.price as price,
+		a.CREATE_DATE as "createDate",
+		c.name as "collectionSiteName",
+		a.status as "status"
+		FROM catalog_copy a
+		<include refid="copylistJoins"/>
+		where a.del_flag = '0'
+		and a.bar_code = #{oldBarcode}
+		AND a.org_id = #{orgId}
+
+	</select>
+	<!--把副本状态改为在馆-->
+	<update id="returnLossCopy" parameterType="Copy">
+		UPDATE catalog_copy SET
+		status ='0',
+		update_by = #{updateBy},update_date = #{updateDate}
+		WHERE id = #{id} and org_id=#{orgId}
+	</update>
+
+	<!--条码查缺-->
+	<select id="checkBarcode" parameterType="com.lianyitech.modules.catalog.entity.LibraryCopy" resultType="java.lang.String">
+		select t.bar_code as barcode
+		from catalog_copy t
+		<![CDATA[
+		where t.bar_code >= #{beginBarcode}
+		and t.bar_code <= #{endBarcode}
+		and t.org_id = #{orgId}
+		and t.del_flag = '0'
+		union
+		select t.bar_code as barcode
+		from PERI_BINDING t
+		where t.bar_code >= #{beginBarcode}
+		and t.bar_code <= #{endBarcode}
+		and t.org_id = #{orgId}
+		and t.del_flag = '0'
+		union
+		select t.card as barcode
+		from circulate_card t
+		inner join circulate_reader r
+		on (t.reader_id = r.id AND r.del_flag = '0' and r.org_id = #{orgId})
+		where t.del_flag = '0'
+		and t.card >= #{beginBarcode}
+		and t.card <= #{endBarcode}
+		and r.org_id = #{orgId}
+		and t.del_flag = '0'
+		union
+		select t.old_bar_code as barcode
+		from CATALOG_BARCODE_RECORD t
+		where t.old_bar_code >= #{beginBarcode}
+		and t.old_bar_code <= #{endBarcode}
+		and t.org_id = #{orgId}
+		and t.del_flag = '0'
+		]]>
+	</select>
+	<!--查缺打印，复本根据条码查询信息-->
+	<select id="getCopyByBarcode" parameterType="Copy" resultType="Copy">
+			select
+				t.id as id,
+				t.bar_code as barcode,
+				d.title as title,
+				d.librarsort_code as librarsortCode,
+				d.taneji_no as tanejiNo,
+				t.ass_no as assNo,
+				d.book_no as bookNo,
+				t.create_date as createDate
+			 from CATALOG_COPY t
+	   inner join CATALOG_BOOK_DIRECTORY d
+			   on (t.book_directory_id = d.id and d.del_flag = '0' and d.org_id = #{orgId})
+			where t.del_flag = '0'
+			 and (t.status != '3'and t.status !='4')
+			  and t.bar_code = #{barcode}
+			  and t.org_id = #{orgId}
+	</select>
+
+	<select id = "countBookDirectory" resultType="Integer">
+		select count(1) from catalog_book_directory t where t.id = #{bookDirectoryId} and t.del_flag = '0' and t.org_id=#{orgId}
+	</select>
+
+	<select id="findBookByBarCode" parameterType="Copy" resultType="Map">
+		select t1.id as "copyId",
+		t1.status as "status",
+		t2.title as "title",
+		nvl(t2.sub_title,'') as "subTitle",
+		t1.bar_code as "barCode",
+		t2.author as "author",
+		t2.librarsort_code as "librarsortCode",
+		t2.taneji_no as "tanejiNo",
+		t1.ass_no as "assNo",
+		t2.publishing_name as "publishingName",
+		t2.price as "price"
+		from catalog_copy t1
+		inner join catalog_book_directory t2 on t1.book_directory_id = t2.id
+		where t1.bar_code = #{barcode} and t1.org_id = #{orgId} and t2.org_id = #{orgId} and t1.del_flag='0' and t2.del_flag='0' and rownum=1
+	</select>
+
+	<!--根据书目id获得其下复本信息的条形码集合-->
+	<select id="listBarcode" parameterType="BookDirectory" resultType="java.lang.String">
+		select t.bar_code from catalog_copy t where t.book_directory_id = #{id} and t.del_flag = '0' and t.org_id = #{orgId}
+	</select>
+
+	<select id="findStatusByBarCode" resultType="java.util.Map">
+		select decode(a.status,null,'0',a.status) as "status",b.stock_attr as "stockAttr"
+		from catalog_copy a left join sys_collection_site b on (a.collection_site_id = b.id and b.del_flag='0' and b.org_id = #{orgId} )
+		where a.org_id = #{orgId} and a.bar_code = #{barcode} and a.del_flag = '0'and rownum=1
+	</select>
+</mapper>
