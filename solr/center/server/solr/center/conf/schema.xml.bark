@@ -1,0 +1,94 @@
+<?xml version="1.0" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<schema name="example core zero" version="1.1">
+  <types>
+   <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+   <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
+   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+   <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0" />
+   <fieldType name="date" class="solr.TrieDateField" precisionStep="0" positionIncrementGap="0"/>
+
+  <fieldType name="text_ik" class="solr.TextField">
+		<analyzer class="org.wltea.analyzer.lucene.IKAnalyzer"/>
+	</fieldType>
+  </types>
+
+ <fields>
+  <!-- general -->
+   <field name="id"     type="string"   indexed="true"  stored="true"  required="true" multiValued="false"/>
+   <field name="orgId"        type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="isbn"        type="text_ik"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="title"    type="text_ik"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="subTitle"     type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="tiedTitle"     type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="partName"     type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="partNum"     type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="author"      type="text_ik"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="subAuthor"    type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="seriesEditor"    type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="translator"    type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="publishingName"     type="text_ik"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="publishingAddress"    type="string"   indexed="true"  stored="true"  multiValued="false"/>
+   <field name="publishingTime"     type="text_ik"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="updateDate"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="price"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="librarsortId"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="librarsortCode"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="autohrAbstract"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="edition"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="language"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="measure"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="pageNo"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="bindingForm"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="bestAge"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="attachmentNote"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="subject"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="content"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="tanejiNo"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="assNo"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="purpose"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="marc64"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="pinyinAbb"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="catalog"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="iconSmall"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="iconLarge"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="remarks"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="delFlag"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="classificationId"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="code"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="classificationName"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="parentId"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="recodeId"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="provinceId"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="star"     type="double"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="recomNum"     type="double"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="sumScore"     type="double"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="recomId"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="isCore"     type="int"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="isPublic"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+   <field name="_version_" type="long"     indexed="true"  stored="true"/>
+ </fields>
+
+ <!-- field to use to determine and enforce document uniqueness. -->
+ <uniqueKey>id</uniqueKey>
+
+ <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
+ <solrQueryParser defaultOperator="OR"/>
+</schema>
+

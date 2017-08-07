@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<dataConfig>
+	<!--中央书目solr 数据库连接为中央书目库-->
+	<dataSource type="JdbcDataSource" driver="oracle.jdbc.driver.OracleDriver" url="jdbc:oracle:thin:@192.168.2.209:1521:moe1" user="bibcenter" password="bibcenter" />
+
+	<document>
+		<entity name="library" pk="ID" query="select a.id as ID,a.org_id as orgId,replace(a.isbn, '-', '') as isbn,a.title,a.sub_title as subTitle,a.tied_title as tiedTitle,a.part_name as partName,a.part_num as partNum,a.series_name,a.author,a.sub_author as subAuthor,a.series_editor as seriesEditor,a.translator,a.publishing_name as publishingName,a.publishing_address as publishingAddress,a.publishing_time as publishingTime,a.librarsort_id  as librarsortId,a.librarsort_code as librarsortCode,a.price,a.edition,a.language,a.measure,a.page_no as pageNo,a.binding_form as bindingForm,a.best_age as bestAge,a.attachment_note as attachmentNote,a.subject,a.content,a.taneji_no as tanejiNo,a.ass_no as assNo,a.purpose,a.marc64,a.autohr_abstract as autohrAbstract,a.catalog,a.pinyin_abb as pinyinAbb,a.icon_small as iconSmall,a.icon_large as iconLarge,a.remarks,a.del_flag as delFlag,c.id as classificationId,c.code,c.name as classificationName,c.parent_id as parentId,d.id as recodeId,nvl(d.province_id,0) as provinceId,nvl(d.star,0)as star,nvl(d.num,0) as recomNum,nvl(d.star*2*d.num,0)  as sumScore,
+	(select to_char(wm_concat(re.recom_id)) from BIB_RECOM_DETAIL re where re.bib_recom_detail_id=a.id) as recomId,
+	(select decode(count(1),0,0,1) from BIB_RECOM_DETAIL re where re.bib_recom_detail_id=a.id and re.recom_id='1') as isCore,a.is_public as isPublic
+	 from BOOK_DIRECTORY a left join BIB_CLASSIFICATION_DETAIL b on a.id = b.bibliography_id left join BIB_CLASSIFICATION c on c.id = b.classification_id left join BIB_SCORE_RECORD d on a.id = d.bibliography_id where a.del_flag='0' "
+				deltaQuery="SELECT id as ID FROM BOOK_DIRECTORY where del_flag='0' and (update_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS') or create_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS'))"
+				deletedPkQuery="SELECT id as ID FROM BOOK_DIRECTORY where update_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS') and del_flag='1' "
+				deltaImportQuery="select a.id as id,a.org_id as orgId,replace(a.isbn, '-', '') as isbn,a.title,a.sub_title as subTitle,a.tied_title as tiedTitle,a.part_name as partName,a.part_num as partNum,a.series_name,a.author,a.sub_author as subAuthor,a.series_editor as seriesEditor,a.translator,a.publishing_name as publishingName,a.publishing_address as publishingAddress,a.publishing_time as publishingTime,a.librarsort_id as librarsortId,a.librarsort_code as librarsortCode,a.price,a.edition,a.language,a.measure,a.page_no as pageNo,a.binding_form as bindingForm,a.best_age as bestAge,a.attachment_note as attachmentNote,a.subject,a.content,a.taneji_no as tanejiNo,a.ass_no as assNo,a.purpose,a.marc64,a.autohr_abstract as autohrAbstract,a.catalog,a.pinyin_abb as pinyinAbb,a.icon_small as iconSmall,a.icon_large as iconLarge,a.remarks,a.del_flag as delFlag,c.id as classificationId,c.code,c.name as classificationName,c.parent_id as parentId,d.id as recodeId,nvl(d.province_id,0) as provinceId,nvl(d.star,0)as star,nvl(d.num,0) as recomNum,nvl(d.star*2*d.num,0)  as sumScore,
+		(select to_char(wm_concat(re.recom_id)) from BIB_RECOM_DETAIL re where re.bib_recom_detail_id=a.id) as recomId,
+		(select decode(count(1),0,0,1) from BIB_RECOM_DETAIL re where re.bib_recom_detail_id=a.id and re.recom_id='1') as isCore,a.is_public as isPublic
+		from BOOK_DIRECTORY a left join BIB_CLASSIFICATION_DETAIL b on a.id = b.bibliography_id left join BIB_CLASSIFICATION c on c.id = b.classification_id  left join BIB_SCORE_RECORD d on a.id = d.bibliography_id where a.id='${dih.delta.ID}'"  >
+			<field column="id" name="ID"/>
+			<field column="orgId" name="orgId"/>
+			<field column="isbn" name="isbn"/>
+			<field column="title" name="title"/>
+			<field column="sub_title" name="subTitle"/>
+			<field column="tied_title" name="tiedTitle"/>
+			<field column="part_name" name="partName"/>
+			<field column="part_num" name="partNum"/>
+			<field column="author" name="author"/>
+			<field column="sub_author" name="subAuthor"/>
+			<field column="series_editor" name="seriesEditor"/>
+			<field column="translator" name="translator"/>
+			<field column="publishing_name" name="publishingName"/>
+			<field column="publishing_address" name="publishingAddress"/>
+			<field column="publishing_time" name="publishingTime"/>
+			<field column="librarsort_id" name="librarsortId"/>
+			<field column="librarsort_code" name="librarsortCode"/>
+			<field column="price" name="price"/>
+			<field column="edition" name="edition"/>
+			<field column="language" name="language"/>
+			<field column="measure" name="measure"/>
+			<field column="page_no" name="pageNo"/>
+			<field column="binding_form" name="bindingForm"/>
+			<field column="best_age" name="bestAge"/>
+			<field column="attachment_note" name="attachmentNote"/>
+			<field column="subject" name="subject"/>
+			<field column="content" name="content"/>
+			<field column="taneji_no" name="tanejiNo"/>
+			<field column="ass_no" name="assNo"/>
+			<field column="purpose" name="purpose"/>
+			<field column="marc64" name="marc64" clob="true"/>
+			<field column="autohr_abstract" name="autohrAbstract"/>
+			<field column="catalog" name="catalog"/>
+			<field column="pinyin_abb" name="pinyinAbb"/>
+			<field column="icon_small" name="iconSmall"/>
+			<field column="icon_large" name="iconLarge"/>
+			<field column="remarks" name="remarks"/>
+			<field column="del_flag" name="delFlag"/>
+			<field column="id" name="classificationId"/>
+			<field column="code" name="code"/>
+			<field column="name" name="classificationName"/>
+			<field column="parent_id" name="parentId"/>
+			<field column="id" name="recodeId"/>
+			<field column="province_id" name="provinceId"/>
+			<field column="star" name="star"/>
+			<field column="num" name="recomNum"/>
+			<field column="sumScore" name="sumScore"/>
+			<field column="recomId" name="recomId"/>
+			<field column="isCore" name="isCore"/>
+			<field column="is_public" name="isPublic"/>
+		</entity>
+	</document>
+
+
+</dataConfig>

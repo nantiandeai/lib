@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<dataConfig> 
+	<!--单馆solr书目，数据源为图书v3.0行馆数据源-->
+  <dataSource type="JdbcDataSource" driver="oracle.jdbc.driver.OracleDriver" url="jdbc:oracle:thin:@192.168.2.224:1521:moe1" user="industry" password="industry" /> 
+
+  <document>
+		<entity name="library" pk="ID" query="select a.ID as id,a.org_Id as orgId,replace(a.isbn,'-','') as isbn,a.title, a.sub_title as subTitle, a.part_name as partName,a.part_num  as partNum,a.author,a.publishing_name as publishingName,a.publishing_time as publishingTime,a.price,a.librarsort_ID as librarsortId,a.librarsort_code as librarsortCode,a.series_name as seriesName  from info_book_directory a where a.del_flag='0'" 
+		       deltaQuery="SELECT id as ID FROM info_book_directory where del_flag='0' and (update_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS') or create_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS'))" 
+		       deletedPkQuery="SELECT id as ID FROM info_book_directory where update_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS') and del_flag='1' "  
+			   deltaImportQuery="select a.ID as id,a.org_Id as orgId,replace(a.isbn,'-','') as isbn,a.title,a.author,a.publishing_name as publishingName,a.publishing_time as publishingTime,a.price,a.librarsort_Id as librarsortId,a.librarsort_code as librarsortCode,a.series_name as seriesName from info_book_directory a where a.id='${dih.delta.ID}'"  >
+		<field column="id" name="id"/>
+		<field column="orgId" name="orgId"/>
+		<field column="isbn" name="isbn"/>
+		<field column="isbn" name="isbn"/> 
+		<field column="title" name="title"/> 
+		<field column="subTitle" name="subTitle"/>
+		<field column="partName" name="partName"/>
+		<field column="partNum" name="partNum"/>
+		<field column="author" name="author"/> 
+		<field column="publishingName" name="publishingName"/>
+		<field column="publishingTime" name="publishingTime"/>
+		<field column="price" name="price"/>
+		<field column="librarsortId" name="librarsortId"/>
+		<field column="librarsortCode" name="librarsortCode"/>
+		<field column="seriesName" name="seriesName"/>
+		</entity>
+   </document>
+
+
+</dataConfig>

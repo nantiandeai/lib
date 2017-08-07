@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<dataConfig> 
+<!--期刊solr 数据库连接为中央书目库-->
+  <dataSource type="JdbcDataSource" driver="oracle.jdbc.driver.OracleDriver" url="jdbc:oracle:thin:@192.168.2.209:1521:moe1" user="bibcenter" password="bibcenter" /> 
+
+  <document>
+	<entity name="directory" pk="ID" query="select a.id,a.org_id,a.issn,a.peri_num as periNum,a.email_num as emailNum,a.title,a.sub_title as subTitle,a.author as author,a.press_id as pressId,a.librarsort_id as librarsortId
+,a.librarsort_code as librarsortCode,a.price,a.book_size as bookSize ,a.publishing_fre as publishingFre,a.language,a.lev,a.peri_type as periType,a.marc64,a.publishing_name as publishingName
+,a.create_by as createBy,a.del_flag as delFlag,a.remarks , to_char(a.content) as content from peri_directory a left join BIB_CLASSIFICATION_DETAIL b on a.id = b.bibliography_id
+  left join BIB_CLASSIFICATION c on c.id = b.classification_id
+  where  a.del_flag = '0'" 
+		deltaQuery="SELECT id as ID FROM peri_directory where del_flag='0' and (update_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS') or create_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS'))" 
+		deletedPkQuery="SELECT id as ID FROM  peri_directory where update_date > to_date('${dataimporter.last_index_time}','YYYY-MM-DD HH24:mi:SS') and del_flag='1' "  
+		deltaImportQuery="select a.id,a.org_id,a.issn,a.peri_num as periNum,a.email_num as emailNum,a.title,a.sub_title as subTitle,a.author as author,a.press_id as pressId,a.librarsort_id as librarsortId
+,a.librarsort_code as librarsortCode,a.price,a.book_size as bookSize ,a.publishing_fre as publishingFre,a.language,a.lev,a.peri_type as periType,a.marc64,a.publishing_name as publishingName
+,a.create_by as createBy,a.del_flag as delFlag,a.remarks , to_char(a.content) as content  from peri_directory a left join BIB_CLASSIFICATION_DETAIL b on a.id = b.bibliography_id
+  left join BIB_CLASSIFICATION c on c.id = b.classification_id where a.id='${dih.delta.ID}'"  >
+		<field column="id" name="id"/>
+		<field column="orgId" name="orgId"/>
+		<field column="issn" name="issn"/> 
+		<field column="peri_num" name="periNum"/>
+		<field column="email_num" name="emailNum"/>		
+		<field column="title" name="title"/>
+		<field column="sub_title" name="subTitle"/> 	
+		<field column="author" name="author"/> 
+		<field column="press_id" name="pressId"/>
+        <field column="librarsort_id" name="librarsortId"/>
+        <field column="librarsort_code" name="librarsortCode"/>
+		<field column="category_id" name="categoryId"/>
+		<field column="category_code" name="categoryCode"/>
+		<field column="price" name="price"/>
+		<field column="book_size" name="bookSize"/>
+		<field column="publishing_fre" name="publishingFre"/>
+         <field column="publishing_name" name="publishingName"/>
+		<field column="language" name="language"/>
+         <field column="lev" name="lev"/>
+		<field column="peri_type" name="periType"/>
+		<field column="create_by" name="createBy"/>
+		<field column="update_by" name="updateBy"/>
+		<field column="remarks" name="remarks"/>
+        <field column="content" name="content"/>
+		<field column="del_flag" name="delFlag"/>
+		
+
+	</entity>
+   </document>
+
+
+</dataConfig>

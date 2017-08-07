@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Solr managed schema - automatically generated - DO NOT EDIT -->
+<schema name="example core zero" version="1.1">
+  <uniqueKey>id</uniqueKey>
+  <solrQueryParser defaultOperator="OR"/>
+  <fieldType name="date" class="solr.TrieDateField" positionIncrementGap="0" precisionStep="0"/>
+  <fieldType name="double" class="solr.TrieDoubleField" omitNorms="true" positionIncrementGap="0" precisionStep="0"/>
+  <fieldType name="long" class="solr.TrieLongField" positionIncrementGap="0" precisionStep="0"/>
+  <fieldType name="string" class="solr.StrField" omitNorms="true" sortMissingLast="true"/>
+  <fieldType name="text_ik" class="solr.TextField">
+    <analyzer class="org.wltea.analyzer.lucene.IKAnalyzer"/>
+  </fieldType>
+  <field name="_version_" type="long" indexed="true" stored="true"/>
+  <field name="author" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="id" type="string" multiValued="false" indexed="true" required="true" stored="true"/>
+  <field name="isbn" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="subTitle" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="partName" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="partNum" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="librarsortCode" type="string" multiValued="false" indexed="true" stored="true"/>
+  <field name="seriesName" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="librarsortId" type="string" multiValued="false" indexed="true" stored="true"/>
+  <field name="orgId" type="string" multiValued="false" indexed="true" stored="true"/>
+  <field name="price" type="double" multiValued="false" indexed="true" stored="true"/>
+  <field name="publishingName" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="publishingTime" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="title" type="text_ik" multiValued="false" indexed="true" stored="true"/>
+  <field name="update_date" type="string" multiValued="false" indexed="true" stored="true"/>
+</schema>

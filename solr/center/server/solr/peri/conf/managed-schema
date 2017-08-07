@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Solr managed schema - automatically generated - DO NOT EDIT -->
+<schema name="example core zero" version="1.1">
+  <uniqueKey>id</uniqueKey>
+  <solrQueryParser defaultOperator="OR"/>
+   <fieldtype name="string"  class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+   <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+   <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0" /> 
+   <fieldType name="date" class="solr.TrieDateField" precisionStep="0" positionIncrementGap="0"/>
+   <fieldType name="text_ik" class="solr.TextField"><analyzer class="org.wltea.analyzer.lucene.IKAnalyzer"/></fieldType>
+	<field name="id"     type="string"   indexed="true"  stored="true"  required="true" multiValued="false"/>
+	<field name="orgId"        type="string"   indexed="true"  stored="true"  multiValued="false"/>
+	<field name="issn"        type="text_ik"   indexed="true"  stored="true"  multiValued="false"/>
+	<field name="periNum"    type="text_ik"   indexed="true"  stored="true"  multiValued="false"/>
+	<field name="emailNum"     type="string"   indexed="true"  stored="true"  multiValued="false"/>
+	<field name="title"     type="text_ik"   indexed="true"  stored="true"  multiValued="false"/>
+	<field name="subTitle"     type="string"   indexed="true"  stored="true"  multiValued="false"/> 	
+	<field name="author"      type="text_ik"   indexed="true"  stored="true"  multiValued="false" /> 
+	<field name="pressId"    type="string"   indexed="true"  stored="true"  multiValued="false"/>
+	<field name="categoryId"    type="string"   indexed="true"  stored="true"  multiValued="false"/>
+	<field name="categoryCode"    type="string"   indexed="true"  stored="true"  multiValued="false"/> 
+	<field name="bookSize"     type="string"   indexed="true"  stored="true"  multiValued="false" /> 
+	<field name="publishingFre"     type="string"   indexed="true"  stored="true"  multiValued="false" /> 
+	<field name="language"     type="string"   indexed="true"  stored="true"  multiValued="false" /> 
+	<field name="lev"     type="string"   indexed="true"  stored="true"  multiValued="false" /> 
+	<field name="periType"     type="string"   indexed="true"  stored="true"  multiValued="false" /> 
+	<field name="publishingName"     type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="price"     type="string"   indexed="true"  stored="true"  multiValued="false" />  
+	<field name="remarks"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="content"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="createBy"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="createDate"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="updateBy"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="updateDate"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="delFlag"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="librarsortId"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="librarsortCode"    type="string"   indexed="true"  stored="true"  multiValued="false" />
+	<field name="_version_" type="long"     indexed="true"  stored="true"/>
+</schema>
