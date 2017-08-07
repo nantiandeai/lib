@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.SchoolBorrowRankDao">
+
+	<sql id="rank_circulate_date_where">
+		<!--时间条件开始-->
+		<if test="(year!=null and year!='') or (month!=null and month!='') or (quarter!=null and quarter!='')">
+			and exists (
+			select 1 from DIM_DATE d where c.date_id = d.id
+			<if test="year!=null and year!=''">
+				and d.c_year = #{year}
+			</if>
+			<if test="quarter!=null and quarter!=''">
+				and d.c_quarter=#{quarter}
+			</if>
+			<if test="month!=null and month!=''">
+				and d.c_month=#{month}
+			</if>
+			)
+		</if>
+		<!--时间条件结束-->
+	</sql>
+
+	<!--查询所有的学校借阅排行-->
+	<select id="listSchoolBorrowRank" resultType="SchoolBorrowRank">
+		select org.unit_name schoolName,circulate.borrowNum from(
+			select * from(
+				select c.org_id, count(1) borrowNum
+				from fact_circulate c
+				inner join dim_op_type op on (c.op_type_id = op.id and op.log_type = '0')
+				inner join dim_org org on (c.org_id = org.id
+					<!--省市县条件开始-->
+					<include refid="com.lianyitech.modules.report.dao.BookReportDao.common_where"/>
+					<!--省市县条件结束-->
+					<!--学校类别条件开始-->
+					<if test="schoolType!=null and schoolType!=''">
+						and org.school_type=#{schoolType}
+					</if>
+					<!--学校类别条件结束-->
+				)
+				where 1 = 1
+					<include refid="rank_circulate_date_where"/>
+				group by c.org_id
+				order by borrowNum desc
+			)
+			where <![CDATA[rownum <= 50]]>
+		) circulate
+		inner join dim_org org on circulate.org_id = org.id
+		where <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+		order by circulate.borrowNum desc
+	</select>
+
+</mapper>

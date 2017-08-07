@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.LibraryAssortDao">
+
+	<sql id="library_assort_where">
+		<!--条件区域开始-->
+		<if test="province!=null and province!=''"><!--省条件-->
+			AND org.PROVINCE_CODE = #{province}
+		</if>
+		<if test="city!=null and city!=''"><!--市条件-->
+			AND org.CITY_CODE = #{city}
+		</if>
+		<if test="county!=null and county!=''"><!--县条件-->
+			AND org.COUNTY_CODE = #{county}
+		</if>
+		<if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+			AND org.school_area_code = #{schoolArea}
+		</if>
+		<if test="unitName !=null and unitName != ''">
+			and (org.unit_name like '%'||#{unitName}||'%' or org.school_area_name like '%'||#{unitName}||'%')
+		</if>
+	</sql>
+
+	<!--22类统计-->
+	<select id="libraryStatis" resultType="LibraryAssort">
+		select
+			cat.small_classes_code smallClassesCode,
+			cat.small_classes_name smallClassesName,
+			nvl(sum(copy.copys),0) bookNum,
+			count(distinct copy.assortnum) bookSpecies,
+			nvl(sum(copy.price),0) booksAmount
+		FROM dim_book_category cat
+		left join (
+			select copy.catid, copy.copys, copy.assortnum, copy.price
+			from dim_org org,
+				<choose>
+					<when test="bookType !=null and bookType == '2'.toString()"><!--期刊-->
+						mv_fact_peri_copy_assort copy
+					</when>
+					<otherwise>
+						mv_fact_copy_assort copy
+					</otherwise>
+				</choose>
+			where org.type = '4'
+				and org.county_code is not null
+				and org.id = copy.org_id
+				and org.valid = '0'
+				<include refid="library_assort_where"/>
+				<!--馆藏复本时间查询条件-->
+				<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.mv_copy_date_where"/>
+		) copy on copy.catid = cat.id
+		group by  cat.small_classes_code, cat.small_classes_name
+		order by  cat.small_classes_code
+	</select>
+
+	<!--五大类统计-->
+	<select id="fiveClassStatis" resultType="LibraryAssort">
+        select
+			cat.major_classes_code majorClassesCode,
+			cat.major_classes_name majorClassesName,
+			nvl(sum(copy.copys),0) bookNum,
+			count(distinct copy.assortnum) bookSpecies,
+			nvl(sum(copy.price),0) booksAmount
+        FROM dim_book_category cat
+		left join (
+			select copy.catid, copy.copys, copy.assortnum, copy.price
+			from dim_org org,
+				<choose>
+					<when test="bookType !=null and bookType == '2'.toString()"><!--期刊-->
+						mv_fact_peri_copy_assort copy
+					</when>
+					<otherwise>
+						mv_fact_copy_assort copy
+					</otherwise>
+				</choose>
+			where org.type = '4'
+				and org.county_code is not null
+				and org.id = copy.org_id
+				and org.valid = '0'
+				<include refid="library_assort_where"/>
+				<!--馆藏复本时间查询条件-->
+				<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.mv_copy_date_where"/>
+		) copy on copy.catid = cat.id
+		group by cat.major_classes_code, cat.major_classes_name
+		order by cat.major_classes_code
+	</select>
+</mapper>

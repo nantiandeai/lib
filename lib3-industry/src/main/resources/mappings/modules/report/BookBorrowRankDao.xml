@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.BookBorrowRankDao">
+    <select id="listBookBorrowRank" resultType="BookBorrowRank">
+        select
+            book.title,
+            book.author,
+            book.publishing_name publishingName,
+            book.publishing_time publishingTime,
+            circulate.borrowNum
+        from (
+          select *
+          from (
+            select c.directory_id, count(1) borrowNum
+            from fact_circulate c
+            inner join dim_op_type op on (c.op_type_id = op.id and op.log_type = '0')
+            inner join dim_org org on (c.org_id = org.id
+                <!--省市县条件开始-->
+                <include refid="com.lianyitech.modules.report.dao.BookReportDao.common_where"/>
+                <!--省市县条件结束-->
+            )
+          where 1 = 1
+              <!--流通时间查询条件-->
+              <include refid="com.lianyitech.modules.report.dao.SchoolBorrowRankDao.rank_circulate_date_where"/>
+          group by c.directory_id
+          order by borrowNum desc
+          )
+        where <![CDATA[rownum <= 50]]>
+         ) circulate
+        inner join DIM_BOOK_DIRECTORY book on circulate.directory_id = book.id
+        order by circulate.borrowNum desc
+    </select>
+</mapper>

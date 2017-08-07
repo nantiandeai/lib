@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.BookReportDao">
+	<sql id="org_type_where">
+		org.type = '4' <!--学校类型-->
+		and org.county_code is not null
+	</sql>
+	<!--报表公用关联条件-->
+	<sql id="common_where">
+		<!--条件区域开始-->
+		<if test="province!=null and province!=''"><!--省条件-->
+			AND org.PROVINCE_CODE = #{province}
+		</if>
+		<if test="city!=null and city!=''"><!--市条件-->
+			AND org.CITY_CODE = #{city}
+		</if>
+		<if test="county!=null and county!=''"><!--县条件-->
+			AND org.COUNTY_CODE = #{county}
+		</if>
+		<if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+			AND org.school_area_code = #{schoolArea}
+		</if>
+		<if test="unitName !=null and unitName != ''"><!--学校名称过滤条件-->
+			and org.unit_name like '%'||#{unitName}||'%'
+		</if>
+	</sql>
+	<!--报表公用维度显示-->
+	<sql id="dimension"><!--这里需要带下学校的（下面判断when顺序不能颠倒）-->
+		<choose>
+			<when test="(unitName !=null and unitName!='') or ( county !=null and county !='')"><!--学校或者县-->
+				org.UNIT_CODE unitCode,
+				org.UNIT_NAME unitName,
+			</when>
+			<when test="city !=null and city !=''"><!--市-->
+				org.COUNTY_CODE unitCode,
+				org.COUNTY_NAME unitName,
+			</when>
+			<when test="province !=null and province !=''"><!--省-->
+				org.CITY_CODE unitCode,
+				org.CITY_NAME unitName,
+			</when>
+			<otherwise><!--否则直接按照省分组-->
+				org.PROVINCE_CODE unitCode,
+				org.PROVINCE_NAME unitName,
+			</otherwise>
+		</choose>
+	</sql>
+	<!--公共维度分组-->
+	<sql id="dimension_group">
+		GROUP BY
+		<choose>
+			<when test="(unitName !=null and unitName!='') or (county !=null and county !='')"><!--学校或者县-->
+				org.UNIT_CODE,
+				org.UNIT_NAME
+			</when>
+			<when test="city !=null and city !=''"><!--市-->
+				org.COUNTY_CODE,
+				org.COUNTY_NAME
+			</when>
+			<when test="province !=null and province !=''"><!--省-->
+				org.CITY_CODE,
+				org.CITY_NAME
+			</when>
+			<otherwise>
+				org.PROVINCE_CODE,
+				org.PROVINCE_NAME
+			</otherwise>
+		</choose>
+	</sql>
+
+	<!--带学区的公共条件-->
+	<sql id="schoolarea_common_where">
+		<if test="province!=null and province!=''"><!--省条件-->
+			AND org.PROVINCE_CODE = #{province}
+		</if>
+		<if test="city!=null and city!=''"><!--市条件-->
+			AND org.CITY_CODE = #{city}
+		</if>
+		<if test="county!=null and county!=''"><!--县条件-->
+			AND org.COUNTY_CODE = #{county}
+		</if>
+		<if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+			AND org.school_area_code = #{schoolArea}
+		</if>
+		<choose>
+			<when test="conditionQuery==2"><!--学区名称过滤条件-->
+				and org.school_area_code is not null
+				<if test="unitName !=null and unitName != ''">
+					and org.school_area_name like '%'||#{unitName}||'%'
+				</if>
+			</when>
+			<when test="conditionQuery==3 and ( (county!=null and county!='') or (unitName!=null and unitName!='') )"><!--学区名称过滤条件-->
+				and org.school_area_code is null
+				<if test="unitName !=null and unitName != ''">
+					and org.unit_name like '%'||#{unitName}||'%'
+				</if>
+			</when>
+			<otherwise><!--查询学校-->
+				<if test="unitName !=null and unitName != ''">
+					and org.unit_name like '%'||#{unitName}||'%'
+				</if>
+			</otherwise>
+		</choose>
+	</sql>
+	<!--带学区的报表公用维度显示-->
+	<sql id="schoolarea_dimension"><!--这里需要带下学校的（下面判断when顺序不能颠倒）-->
+		<choose>
+			<when test="conditionQuery==1"><!--学校-->
+				org.UNIT_CODE unitCode,
+				org.UNIT_NAME unitName,
+				'4' orgType,
+			</when>
+			<when test="conditionQuery==2"><!--学区-->
+				org.school_area_code unitCode,
+				org.school_area_name unitName,
+				'3' orgType,
+			</when>
+			<when test="conditionQuery==3 and ( (county!=null and county!='') or (unitName!=null and unitName!='') )"><!--学校-->
+				org.UNIT_CODE unitCode,
+				org.UNIT_NAME unitName,
+				'4' orgType,
+			</when>
+			<when test="city !=null and city !=''"><!--市-->
+				org.COUNTY_CODE unitCode,
+				org.COUNTY_NAME unitName,
+				'2' orgType,
+			</when>
+			<when test="province !=null and province !=''"><!--省-->
+				org.CITY_CODE unitCode,
+				org.CITY_NAME unitName,
+				'1' orgType,
+			</when>
+			<otherwise><!--否则直接按照省分组-->
+				org.PROVINCE_CODE unitCode,
+				org.PROVINCE_NAME unitName,
+				'0' orgType,
+			</otherwise>
+		</choose>
+	</sql>
+	<!--带学区的公共维度分组-->
+	<sql id="schoolarea_dimension_group">
+		<choose>
+			<when test="conditionQuery==1"><!--学校-->
+				group by org.UNIT_CODE,org.UNIT_NAME
+			</when>
+			<when test="conditionQuery==2"><!--学区-->
+				and org.school_area_code is not null
+				group by org.school_area_code,org.school_area_name
+			</when>
+			<when test="conditionQuery==3 and ( (county!=null and county!='') or (unitName!=null and unitName!='') )"><!--学校-->
+				group by org.UNIT_CODE,org.UNIT_NAME
+			</when>
+			<when test="city !=null and city !=''"><!--市-->
+				and org.COUNTY_CODE is not null
+				group by org.COUNTY_CODE,org.COUNTY_NAME
+			</when>
+			<when test="province !=null and province !=''"><!--省-->
+				and org.CITY_CODE is not null
+				group by org.CITY_CODE,org.CITY_NAME
+			</when>
+			<otherwise>
+				and org.PROVINCE_CODE is not null
+				group by org.PROVINCE_CODE,org.PROVINCE_NAME
+			</otherwise>
+		</choose>
+	</sql>
+
+	<!--限制学校数据开始-->
+	<sql id="limit_schools_start">
+		<!--这里查询学校的时候没带上区域怕查出来学校数据太多限制下数量-->
+		<if test="unitName !=null and unitName !='' and (county==null or county==''.toString())">
+			SELECT * FROM (
+		</if>
+	</sql>
+	<sql id="limit_schools_end">
+		<!--这里查询学校的时候没带上区域怕查出来学校数据太多限制下数量-->
+		<if test="unitName !=null and unitName !='' and (county==null or county==''.toString())">
+			) WHERE
+			<![CDATA[
+			ROWNUM<=200
+			]]>
+		</if>
+	</sql>
+
+	<!--藏书量统计查询list-->
+	<select id="listCollectionStat" resultType="BookReport">
+		<include refid="limit_schools_start"/><!--限制学校数据-->
+		SELECT
+			<include refid="schoolarea_dimension"/><!--维度-->
+			nvl(sum(copy.copys), 0) bookNum,
+			count( distinct copy.assortnum) bookSpecies,
+			nvl(sum(copy.price), 0) booksAmount
+		from dim_org org
+		left join (
+			select org_id, copys, assortnum, price
+			from
+				<choose>
+					<when test="bookType !=null and bookType == '2'.toString()"><!--期刊-->
+						mv_fact_peri_copy_assort copy
+					</when>
+					<otherwise>
+						mv_fact_copy_assort copy
+					</otherwise>
+				</choose>
+			where 1=1
+			<!--馆藏复本时间查询条件-->
+			<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.mv_copy_date_where"/>
+		) copy on org.id = copy.org_id
+		where
+			<include refid="org_type_where"/>
+			<include refid="schoolarea_common_where"/><!--公共条件-->
+			<!--机构有效日期条件-->
+			<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.org_date_where"/>
+		<include refid="schoolarea_dimension_group"/> <!--维度分组group-->
+		<include refid="limit_schools_end"/><!--限制学校数据-->
+	</select>
+
+	<!--生均及增量统计查询list-->
+	<select id="listStuAddBookNum" resultType="BookReport">
+		<include refid="limit_schools_start"/>
+		select
+			<include refid="schoolarea_dimension"/><!--维度-->
+			nvl(sum(bookinfo.bookNum),0) bookNum,
+			<!--这里判断下是否加了年条件如果没有加年条件的话新增册数直接为复本册数-->
+			<choose>
+				<when test="year!=null and year!=''">
+					nvl(sum(bookinfo.addBookNum),0) addBookNum,
+				</when>
+				<otherwise>
+					nvl(sum(bookinfo.bookNum),0) addBookNum,
+				</otherwise>
+			</choose>
+			nvl(sum(readerinfo.studentNum),0) studentNum
+		from dim_org org
+		left join (
+			select  copy.org_id,
+				sum(copy.copys) bookNum
+				<choose><!--新增册数-->
+					<when test="(year!=null and year!='') and (month!=null and month!='')">
+						,sum(decode(copy.indy, #{year}, decode(copy.indm, #{month}, copy.copys, 0), 0)) addBookNum
+					</when>
+					<when test="(year!=null and year!='') and (quarter!=null and quarter!='')">
+						,sum(decode(copy.indy, #{year}, decode(copy.indq, #{quarter}, copy.copys, 0), 0)) addBookNum
+					</when>
+					<otherwise>
+						,sum(decode(copy.indy, #{year}, copy.copys, 0)) addBookNum
+					</otherwise>
+				</choose>
+			from mv_fact_copy_assort copy
+			where 1=1
+				<!--馆藏复本时间查询条件-->
+				<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.mv_copy_date_where"/>
+			group by copy.org_id
+		) bookinfo on org.id = bookinfo.org_id
+		left join (
+			select r.org_id, count(r.id) studentNum
+			from dim_reader r
+			where r.reader_type = '0'
+				<!--读者时间查询条件-->
+				<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.reader_date_where"/>
+			group by r.org_id
+		) readerinfo on org.id = readerinfo.org_id
+		where <include refid="org_type_where"/>
+			<include refid="schoolarea_common_where"/>
+			<!--机构有效日期条件-->
+			<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.org_date_where"/>
+		<include refid="schoolarea_dimension_group"/>
+		<include refid="limit_schools_end"/>
+	</select>
+
+	<!--首页学校统计-->
+	<select id="countSchool" resultType="Integer">
+		select
+			count(1)
+		from dim_org org
+		where org.valid = '0'
+			and <include refid="org_type_where"/>
+			<if test="province!=null and province!=''"><!--省条件-->
+				AND org.PROVINCE_CODE = #{province}
+			</if>
+			<if test="city!=null and city!=''"><!--市条件-->
+				AND org.CITY_CODE = #{city}
+			</if>
+			<if test="county!=null and county!=''"><!--县条件-->
+				AND org.COUNTY_CODE = #{county}
+			</if>
+			<if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+				AND org.school_area_code = #{schoolArea}
+			</if>
+	</select>
+
+	<!--藏书种类数-->
+	<select id="bookType" resultType="Integer">
+		select count(distinct copy.assortnum) bookSpecies
+		FROM dim_org org,
+		<choose>
+			<when test="bookType !=null and bookType == '2'.toString()"><!--期刊-->
+				mv_fact_peri_copy_assort copy
+			</when>
+			<otherwise>
+				mv_fact_copy_assort copy
+			</otherwise>
+		</choose>
+		where <include refid="org_type_where"/>
+			and org.id = copy.org_id
+			<if test="province!=null and province!=''"><!--省条件-->
+				AND org.PROVINCE_CODE = #{province}
+			</if>
+			<if test="city!=null and city!=''"><!--市条件-->
+				AND org.CITY_CODE = #{city}
+			</if>
+			<if test="county!=null and county!=''"><!--县条件-->
+				AND org.COUNTY_CODE = #{county}
+			</if>
+			<if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+				AND org.school_area_code = #{schoolArea}
+			</if>
+			<choose>
+				<when test="conditionQuery==2"><!--学区名称过滤条件-->
+					and org.school_area_code is not null
+					<if test="unitName !=null and unitName != ''">
+						and org.school_area_name like '%'||#{unitName}||'%'
+					</if>
+				</when>
+				<otherwise><!--查询学校-->
+					<if test="unitName !=null and unitName != ''">
+						and org.unit_name like '%'||#{unitName}||'%'
+					</if>
+				</otherwise>
+			</choose>
+			<!--馆藏复本时间查询条件-->
+			<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.mv_copy_date_where"/>
+			<!--机构有效日期条件-->
+			<include refid="com.lianyitech.modules.report.dao.BookCirculteDao.org_date_where"/>
+	</select>
+</mapper>

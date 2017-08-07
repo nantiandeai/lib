@@ -1,0 +1,433 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.BookCirculteDao">
+	<select id="findByBookCirculte" resultType="BookCirculte">
+		select
+		<choose>
+			<when test="year !=null and year !='' and (quarter==null or quarter==''.toString())"><!--季度-->
+			distinct t.c_quarter quarter
+		    </when>
+			<when test="quarter !=null and quarter !='' and (month==null or month==''.toString())">
+			distinct t.c_month month
+		    </when>
+		    <otherwise>
+			distinct t.c_year year
+		    </otherwise>
+		</choose>
+	    from dim_date t where 1=1
+        <choose>
+            <when test="year !=null and year !=''"><!--年条件-->
+            and t.c_year = #{year}
+            </when>
+        </choose>
+	</select>
+
+    <sql id="org_date_where"><!--机构时间查询条件-->
+        and org.valid = '0'
+        <choose>
+            <when test="(year!=null and year!='') or (month!=null and month!='') or (quarter!=null and quarter!='')">
+               and ( exists(
+                    select 1 from dual where 1=1
+                    <choose>
+                        <when test="(year!=null and year!='') and (month!=null and month!='')">
+                            <![CDATA[
+                              and ( (to_char(org.invalid_date, 'yyyy') <= #{year} and to_char(org.invalid_date, 'MM') <= #{month})
+                              or to_char(org.invalid_date, 'yyyy') <= to_number(#{year})-1)
+                            ]]>
+                        </when>
+                        <when test="(year!=null and year!='') and quarter !=null and quarter!=''">
+                            <![CDATA[
+                              and ( (to_char(org.invalid_date, 'yyyy') <= #{year} and to_char(org.invalid_date, 'Q') <= #{quarter})
+                              or to_char(org.invalid_date, 'yyyy') <= to_number(#{year})-1)
+                            ]]>
+                        </when>
+                        <when test="year !=null and year!=''">
+                            <![CDATA[
+                              and to_char(org.invalid_date, 'yyyy') <= #{year}
+                            ]]>
+                        </when>
+                    </choose>
+                )
+                or org.invalid_date is null)
+            </when>
+            <otherwise><!--不传年的情况-->
+                and org.invalid_date is null
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="mv_copy_date_where">
+        and copy.valid = '0'
+        <choose>
+            <when test="(year!=null and year!='') and (month!=null and month!='')">
+                <![CDATA[
+                  and ( (copy.indy <= #{year} and copy.indm <= #{month}) or copy.indy <= to_number(#{year})-1)
+                  and ( (copy.outdy = #{year} and copy.outdm > #{month}) or copy.outdy > to_number(#{year})+1  or copy.outdy is null)
+                ]]>
+            </when>
+            <when test="(year!=null and year!='') and quarter !=null and quarter!=''">
+                <![CDATA[
+                  and ( (copy.indy <= #{year} and copy.indq <= #{quarter}) or copy.indy <= to_number(#{year})-1)
+                  and ( (copy.outdy = #{year} and copy.outdq > #{quarter}) or copy.outdy > to_number(#{year})+1 or copy.outdy is null)
+                ]]>
+            </when>
+            <when test="year !=null and year!=''">
+                <![CDATA[
+                  and copy.indy <= #{year}
+                  and (
+                    copy.outdy >= #{year}
+                    and copy.outdm > decode(to_char(sysdate,'yyyy'),#{year},to_char(sysdate,'mm'), decode(copy.outdy,#{year},'12','01'))
+                    or copy.outdy is null
+                  )
+                ]]>
+            </when>
+            <otherwise><!--不传年的情况-->
+                <![CDATA[
+                  and copy.indy <= to_char(sysdate,'yyyy')
+                  and (
+                    copy.outdy >= to_char(sysdate,'yyyy') and copy.outdm > to_char(sysdate,'mm')
+                    or copy.outdy is null
+                  )
+                ]]>
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="reader_date_where">
+        and r.valid='0' <!--有效-->
+        <choose>
+            <when test="(year!=null and year!='') or (month!=null and month!='') or (quarter!=null and quarter!='')">
+                <choose>
+                    <when test="(year!=null and year!='') and (month!=null and month!='')">
+                        <![CDATA[
+                          and ( (to_char(r.create_date, 'yyyy') <= #{year} and to_char(r.create_date, 'MM') <= #{month})
+                          or to_char(r.create_date, 'yyyy') <= to_number(#{year})-1)
+                        ]]>
+                    </when>
+                    <when test="(year!=null and year!='') and quarter !=null and quarter!=''">
+                        <![CDATA[
+                          and ( (to_char(r.create_date, 'yyyy') <= #{year} and to_char(r.create_date, 'Q') <= #{quarter})
+                          or to_char(r.create_date, 'yyyy') <= to_number(#{year})-1)
+                        ]]>
+                    </when>
+                    <when test="year !=null and year!=''">
+                        <![CDATA[
+                          and to_char(r.create_date, 'yyyy') <= #{year}
+                        ]]>
+                    </when>
+                </choose>
+                and not exists (
+                select 1 from dual where 1=1
+                <choose>
+                    <when test="(year!=null and year!='') and (month!=null and month!='')">
+                        <![CDATA[
+                          and ( (to_char(r.invalid_date, 'yyyy') <= #{year} and to_char(r.invalid_date, 'MM') <= #{month})
+                          or to_char(r.invalid_date, 'yyyy') <= to_number(#{year})-1)
+                        ]]>
+                    </when>
+                    <when test="(year!=null and year!='') and quarter !=null and quarter!=''">
+                        <![CDATA[
+                          and ( (to_char(r.invalid_date, 'yyyy') <= #{year} and to_char(r.invalid_date, 'Q') <= #{quarter})
+                          or to_char(r.invalid_date, 'yyyy') <= to_number(#{year})-1)
+                        ]]>
+                    </when>
+                    <when test="year !=null and year!=''">
+                        <![CDATA[
+                          and to_char(r.invalid_date, 'yyyy') <= #{year}
+                        ]]>
+                    </when>
+                </choose>
+                )
+            </when>
+            <otherwise>
+                and r.invalid_date is null
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!-- 生均借阅统计-->
+    <select id="listStuStatistics" resultType="BookCirculte">
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.limit_schools_start"/><!--限制学校数据-->
+        select
+            <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_dimension"/>
+            nvl(sum(cinfo.stuBorrowNum), 0) stuBorrowNum,
+            nvl(sum(rinfo.studentNum), 0) studentNum
+        from dim_org org
+        left join(
+          select
+            c.org_id, count(c.bar_code) stuBorrowNum
+          from fact_circulate c
+          left join dim_op_type op on c.op_type_id = op.id
+          left join dim_reader r on c.dim_reader_id = r.id
+          where op.log_type = '0' <!--操作类型写死为0借阅-->
+                and r.reader_type='0'<!--读者类型为学生的-->
+                <!--流通时间查询条件-->
+                <include refid="com.lianyitech.modules.report.dao.SchoolBorrowRankDao.rank_circulate_date_where"/>
+          group by c.org_id
+        ) cinfo on org.id = cinfo.org_id
+        left join(
+          select
+            r.org_id, count(r.id) studentNum
+          from dim_reader r
+          where r.reader_type='0'<!--学生-->
+                <!--读者时间查询条件-->
+                <include refid="reader_date_where"/>
+          group by r.org_id
+        ) rinfo on  org.id = rinfo.org_id
+        where
+          <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+          <!--机构有效日期条件-->
+          <include refid="org_date_where"/>
+          <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_common_where"/>
+          <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_dimension_group"/>
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.limit_schools_end"/><!--限制学校数据-->
+    </select>
+
+    <!-- 读者借阅率统计-->
+    <select id="readStatistics" resultType="BookCirculte">
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.limit_schools_start"/><!--限制学校数据-->
+        select
+            <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_dimension"/><!--维度省市县-->
+            nvl(sum(studentNum), 0) studentNum,
+            nvl(sum(stuBorrowNum), 0) stuBorrowNum
+        from dim_org org
+        left join (
+            select r.org_id, count(r.o_reader_id) studentNum
+            from dim_reader r
+            where 1=1
+              <!--读者时间查询条件-->
+              <include refid="reader_date_where"/>
+            group by r.org_id
+        ) rinfo on org.id = rinfo.org_id
+        left join (
+            select c.org_id, count(distinct c.dim_reader_id) stuBorrowNum
+            from fact_circulate c
+            left join dim_op_type op on c.op_type_id = op.id
+            where op.log_type = '0' <!-- 操作类型写死为0借阅-->
+                <!--流通时间查询条件-->
+                <include refid="com.lianyitech.modules.report.dao.SchoolBorrowRankDao.rank_circulate_date_where"/>
+            group by c.org_id
+        ) cinfo on org.id = cinfo.org_id
+        where <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+        <!--省市县条件-->
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_common_where"/>
+        <!--机构有效日期条件-->
+        <include refid="org_date_where"/>
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_dimension_group"/>
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.limit_schools_end"/><!--限制学校数据-->
+    </select>
+
+    <!-- 图书流通率统计-->
+    <select id="bookCirStatistic" resultType="BookCirculte">
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.limit_schools_start"/><!--限制学校数据-->
+        select
+            <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_dimension"/>
+            nvl(sum(bookNum), 0) bookNum,
+            nvl(sum(stuBorrowNum), 0) stuBorrowNum
+        from dim_org org
+        left join (
+            select sum(copy.copys) bookNum, copy.org_id
+            from mv_fact_copy_assort copy
+            where 1=1
+              <!--馆藏复本时间查询条件-->
+              <include refid="mv_copy_date_where"/>
+            group by copy.org_id
+        ) cinfo on org.id = cinfo.org_id
+        left join (
+            select c.org_id, count(distinct c.bar_code) stuBorrowNum
+            from fact_circulate c
+            left join dim_op_type op on c.op_type_id = op.id
+            where op.log_type = '0' <!-- 操作类型写死为0借阅-->
+                <!--流通时间查询条件-->
+                <include refid="com.lianyitech.modules.report.dao.SchoolBorrowRankDao.rank_circulate_date_where"/>
+            group by c.org_id
+        ) circulate on circulate.org_id = org.id
+        where <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+        <!--省市县条件-->
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_common_where"/>
+        <!--机构有效日期条件-->
+        <include refid="org_date_where"/>
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.schoolarea_dimension_group"/>
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.limit_schools_end"/><!--限制学校数据-->
+    </select>
+
+    <!--首页折线图流通率-->
+    <select id="circulationRate" resultType="BookCirculte">
+       <!-- select YEAR,MONTH,STUBORROWNUM,BOOKNUM,DECODE(BOOKNUM, 0, 0, STUBORROWNUM/ BOOKNUM) AS CIRCULATERATE
+        from (
+        select DINFO.C_YEAR AS YEAR,
+        dinfo.c_month AS month,
+        (select count(*) from FACT_COPY B
+        inner join DIM_DATE F ON F.ID = B.IN_DATE_ID
+        INNER JOIN DIM_ORG ORG ON B.ORG_ID = ORG.ID
+        left join DIM_DATE C on c.id=B.Out_Date_Id
+        WHERE B.VALID = '0'
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.common_where"/>
+        and F.c_year||F.c_month&lt;=DINFO.c_Year||DINFO.C_MONTH
+        and (OUT_DATE_ID is null or C.c_year||C.c_month&gt;=DINFO.c_Year||DINFO.C_MONTH)) BOOKNUM,
+        b.stuBorrowNum
+        from (SELECT DISTINCT T.C_YEAR, T.C_MONTH FROM DIM_DATE T  WHERE T.C_YEAR  &gt;= #{year} AND T.C_DATE &lt;SYSDATE
+        ) dinfo
+        left join
+        (
+        select d.c_Year,d.c_month, nvl(count(b.bar_code), 0) bookNum
+        from DIM_DATE d
+        inner join fact_copy b on d.id = b.in_date_id
+        inner join dim_org org on b.org_id = org.id
+        where b.valid = '0'
+        and b.out_date_id is null
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.common_where"/>group by d.c_month,d.c_Year
+        ) a on dinfo.c_month = a.c_month AND DINFO.C_YEAR=a.c_Year
+        left join
+        (
+        select d.
+        c_Year,d.c_month, count(distinct b.bar_code||org.id) stuBorrowNum
+        from DIM_DATE d
+        inner join fact_circulate b on (d.id = b.date_id)
+        inner join dim_op_type opt on (b.op_type_id = opt.id)
+        inner join dim_org org on b.org_id = org.id
+        where opt.log_type = '0'
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.common_where"/>group by d.c_month,d.c_Year
+        ) b on b.c_month = dinfo.c_month AND DINFO.C_YEAR=b.c_Year
+        order by DINFO.C_YEAR,dinfo.c_month
+        ) -->
+
+        with INNP as (
+          SELECT org.unit_code,
+            org.school_area_code,
+            org.county_code,
+            org.city_code,
+            org.province_code,
+            copy.indy || copy.indm ind,
+            sum(copy.copys) c
+            FROM mv_fact_copy_assort copy, DIM_ORG ORG
+            where COPY.VALID = '0'
+            AND COPY.ORG_ID = ORG.ID
+            group by org.unit_code,
+            org.school_area_code,
+            org.county_code,
+            org.city_code,
+            org.province_code,
+            copy.indy || copy.indm
+        ),
+        INN as (
+          select ind, nvl(sum(c), 0) c
+            from INNP
+            where 1=1
+            <if test="province!=null and province!=''"><!--省条件-->
+                AND PROVINCE_CODE = #{province}
+            </if>
+            <if test="city!=null and city!=''"><!--市条件-->
+                AND CITY_CODE = #{city}
+            </if>
+            <if test="county!=null and county!=''"><!--县条件-->
+                AND COUNTY_CODE = #{county}
+            </if>
+            <if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+                AND school_area_code = #{schoolArea}
+            </if>
+            group by ind
+        ),
+        DD as (
+          select distinct D.c_Year || D.C_MONTH d, D.c_Year, D.C_MONTH
+            from DIM_DATE D, INN
+            where D.c_Year || D.C_MONTH = INN.ind(+)
+            and D.c_Year &gt;= #{year}
+            and D.C_DATE  &lt;= SYSDATE
+        ),
+        INS as (
+          select d, sum(c) c from INN, DD where INN.ind &lt;= DD.d group by d
+        ),
+        ONNP as (
+          SELECT org.unit_code,
+            org.school_area_code,
+            org.county_code,
+            org.city_code,
+            org.province_code,
+            copy.outdy || copy.outdm oud,
+            sum(copy.copys) c
+            FROM mv_fact_copy_assort COPY, DIM_ORG ORG
+            where COPY.VALID = '0'
+            AND COPY.ORG_ID = ORG.ID
+            group by org.unit_code,
+            org.school_area_code,
+            org.county_code,
+            org.city_code,
+            org.province_code,
+            copy.outdy || copy.outdm
+        ),
+        ONN as (
+          select oud, nvl(sum(c), 0) c
+            from ONNP
+            where  1=1
+            <if test="province!=null and province!=''"><!--省条件-->
+                AND PROVINCE_CODE = #{province}
+            </if>
+            <if test="city!=null and city!=''"><!--市条件-->
+                AND CITY_CODE = #{city}
+            </if>
+            <if test="county!=null and county!=''"><!--县条件-->
+                AND COUNTY_CODE = #{county}
+            </if>
+            <if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+                AND school_area_code = #{schoolArea}
+            </if>
+            group by oud
+        ),
+        ONS as (
+          select d, sum(c) c from ONN, DD where DD.d >= ONN.oud group by d
+        ),
+        NB as (
+          select INS.d, (nvl(INS.c, 0) - nvl(ONS.c, 0)) c
+            from INS, ONS
+            where INS.d = ONS.d(+)
+        ),
+        BNP as (
+          select org.unit_code,
+            org.school_area_code,
+            org.county_code,
+            org.city_code,
+            org.province_code,
+            odt.c_Year || odt.C_MONTH odt,
+            count(DISTINCT cir.BAR_CODE || cir.org_id) c
+            from FACT_CIRCULATE cir, DIM_OP_TYPE otp, DIM_DATE odt, dim_org org
+            where cir.org_id = org.id
+            and cir.op_type_id = otp.id
+            and cir.date_id = odt.id
+            and otp.log_type = '0'
+            group by org.unit_code,
+            org.school_area_code,
+            org.county_code,
+            org.city_code,
+            org.province_code,
+            odt.c_Year || odt.C_MONTH
+        ),
+        BN as (
+          select odt, sum(c) c
+            from BNP
+            where 1=1
+            <if test="province!=null and province!=''"><!--省条件-->
+                AND BNP.PROVINCE_CODE = #{province}
+            </if>
+            <if test="city!=null and city!=''"><!--市条件-->
+                AND BNP.CITY_CODE = #{city}
+            </if>
+            <if test="county!=null and county!=''"><!--县条件-->
+                AND BNP.COUNTY_CODE = #{county}
+            </if>
+            <if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+                AND BNP.school_area_code = #{schoolArea}
+            </if>
+            group by odt
+        ),
+        NBN as (
+          select NB.d, BN.c bnc, NB.c nbc, (nvl(BN.c, 0) / nvl(NB.c, 0)) c
+            from NB, BN
+            where NB.d = BN.odt(+)
+        )
+        select DD.c_Year AS "year" , DD.C_MONTH AS "month", nvl(NBN.bnc, 0) STUBORROWNUM, nvl(NBN.nbc, 0) BOOKNUM, nvl(NBN.c, 0) CIRCULATERATE
+        from DD, NBN
+        where DD.d = NBN.d(+)
+        order by DD.d
+    </select>
+</mapper>

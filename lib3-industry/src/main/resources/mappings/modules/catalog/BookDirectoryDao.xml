@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.catalog.dao.BookDirectoryDao">
+    
+	<sql id="bookDirectoryColumns">
+		a.id AS "id",
+		a.org_id AS "orgId",
+		a.isbn AS "isbn",
+		a.title AS "title",
+		a.sub_title AS "subTitle",
+		a.tied_title AS "tiedTitle",
+		a.part_name AS "partName",
+		a.part_num AS "partNum",
+		a.series_name AS "seriesName",
+		a.author AS "author",
+		a.sub_author AS "subAuthor",
+		a.series_editor AS "seriesEditor",
+		a.translator AS "translator",
+		a.publishing_name AS "publishingName",
+		a.publishing_address AS "publishingAddress",
+		a.publishing_time AS "publishingTime",
+		a.librarsort_id AS "librarsortId",
+		a.librarsort_code AS "librarsortCode",
+		a.price AS "price",
+		a.edition AS "edition",
+		a.language AS "language",
+		a.measure AS "measure",
+		a.page_no AS "pageNo",
+		a.binding_form AS "bindingForm",
+		a.best_age AS "bestAge",
+		a.attachment_note AS "attachmentNote",
+		a.subject AS "subject",
+		a.content AS "content",
+		a.create_by AS "createBy",
+		a.create_date AS "createDate",
+		a.update_by AS "updateBy",
+		a.update_date AS "updateDate",
+		a.remarks AS "remarks",
+		a.del_flag AS "delFlag",
+		a.taneji_no AS "tanejiNo",
+		a.ass_no AS "assNo",
+		a.purpose AS "purpose",
+		a.marc64 AS "marc64"
+	</sql>
+	<select id="get" resultType="BookDirectory">
+		SELECT 
+			<include refid="bookDirectoryColumns"/>
+		FROM info_book_directory a
+		WHERE a.id = #{id}
+	</select>
+</mapper>

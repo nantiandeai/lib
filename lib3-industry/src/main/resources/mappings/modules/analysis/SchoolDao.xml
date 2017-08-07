@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.analysis.dao.SchoolDao">
+
+    <!--无录入信息的学校list-->
+    <select id="listNoInputSchool" resultType="School">
+        select
+        org.unit_code as "unitCode",
+        org.unit_name as "unitName",
+        org.province_code as "province",
+        org.city_code as "city",
+        org.county_code as "county",
+        org.school_area_code as "schoolArea",
+        org.master as "master",
+        org.phone as "phone",
+        org.type as "orgType"
+        from dim_org org
+        where
+        <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+        and not exists (
+        select 1 from
+        <choose>
+            <when test="selectType !=null and selectType !='' and selectType=='1'.toString()"><!--无馆藏-->
+                fact_copy ftable
+            </when>
+            <when test="selectType !=null and selectType !='' and selectType=='2'.toString()"><!--无读者-->
+                dim_reader ftable
+            </when>
+            <otherwise><!--无流通-->
+                fact_circulate ftable
+            </otherwise>
+        </choose>
+        where ftable.org_id = org.id
+        )
+        <include refid="com.lianyitech.modules.analysis.dao.InputAnalysisDao.analysis_where"/>
+        <!--机构有效日期条件-->
+        <include refid="com.lianyitech.modules.report.dao.BookCirculteDao.org_date_where"/>
+        <choose>
+            <when test="page !=null and page.orderBy != null and page.orderBy != ''">
+                ORDER BY ${page.orderBy}
+            </when>
+        </choose>
+    </select>
+</mapper>

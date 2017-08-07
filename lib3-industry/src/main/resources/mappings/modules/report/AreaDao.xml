@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.AreaDao">
+	<select id="findByParentCode" resultType="Area">
+		<choose>
+			<when test="type==0">
+				select a.unit_code as "code",a.unit_name as "name"
+				from dim_org a where a.type = #{type}
+				<if test="province!=null and province!=''">
+					AND a.unit_code = #{province}
+				</if>
+				<choose>
+					<when test="orgType==null || orgType==''">
+						and 1=2
+					</when>
+				</choose>
+			</when>
+			<when test="type==1">
+				select  a.unit_code as "code",a.unit_name as "name"
+				from dim_org a where a.type = #{type} and a.province_code = #{parentCode}
+				<choose>
+					<when test="orgType==1">
+						and a.unit_code = #{code}
+					</when>
+					<when test="orgType==2 or orgType==3 or orgType==4">
+						and a.unit_code = (select b.city_code from dim_org b where b.unit_code = #{code} and rownum=1)
+					</when>
+					<when test="orgType==null || orgType==''">
+						and 1=2
+					</when>
+				</choose>
+			</when>
+			<when test="type==2">
+				select  a.unit_code as "code",a.unit_name as "name"
+				from dim_org a where a.type = #{type} and a.city_code = #{parentCode}
+				<choose>
+					<when test="orgType==2">
+						and a.unit_code = #{code}
+					</when>
+					<when test="orgType==3">
+						and a.unit_code = (select b.county_code from dim_org b where b.unit_code = #{code} and rownum=1)
+					</when>
+					<when test="orgType==null || orgType==''">
+						and 1=2
+					</when>
+				</choose>
+			</when>
+		</choose>
+	</select>
+
+	<select id="findTypeByCode" resultType="java.lang.String">
+		select a.type as "type" from dim_org a where a.unit_code = #{code} and rownum=1
+	</select>
+	<select id="findByCode" resultType="Area">
+		select
+		   t.unit_code code,
+		   t.unit_name name,
+		   t.province_code province,
+		   t.city_code     city,
+		   t.county_code   county
+	   	from dim_org t
+	  	where t.unit_code = #{code} and rownum=1
+	</select>
+</mapper>
+
+

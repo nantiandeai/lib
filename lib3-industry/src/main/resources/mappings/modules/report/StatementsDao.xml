@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.StatementsDao">
+    <select id="findByBarCode" resultType="Statements">
+        select tall1.barCode,
+        tall2.title,
+        tall2.author,
+        tall2.publishingName,
+        tall2.publishingTime,
+        tall1.borrow,
+        tall1.RENEW,
+        tall1.subscribe,
+        tall1.ORDERBORROW
+        from (select t.bar_code barCode,
+        count(decode(t.op_type_id, '0', 1, null)) borrow,
+        count(decode(t.op_type_id, '7', 1, null)) renew,
+        count(decode(t.op_type_id, '5', 1, null)) subscribe,
+        count(decode(t.op_type_id, '6', 1, null)) orderBorrow
+        from fact_circulate t, dim_org org
+        where t.org_id = org.id(+)
+        <if test="schoolCode!=null and schoolCode!=''">
+            and org.school_code = #{schoolCode}
+        </if>
+        <if test="barCode!=null and barCode!=''">
+            and t.bar_code =#{barCode}
+        </if>
+        <if test="title!=null and title!=''">
+            and tall2.title =#{title}
+        </if>
+        <if test="author!=null and author!=''">
+            and tall2.author =#{author}
+        </if>
+        <if test="publishingName!=null and publishingName!=''">
+            and tall2.publishing_name =#{publishingName}
+        </if>
+        <if test="publishingTime!=null and publishingTime!=''">
+            and tall2.publishing_time =#{publishingTime}
+        </if>
+        group by t.bar_code) tall1,
+        (select t.id bookId,
+        copy.bar_code barCode,
+        t.title,
+        t.author,
+        t.publishing_name publishingName,
+        t.publishing_time publishingTime
+        from info_book_directory t,INFO_COPY copy
+        where copy.book_directory_id = t.id
+        <if test="schoolCode!=null and schoolCode!=''">
+            and t.org_id = #{schoolCode}
+        </if>
+        ) tall2
+        where tall1.barCode = tall2.barCode(+)
+
+    </select>
+    <select id="literature" resultType="Statements">
+        select
+        tall1.title,
+        tall2.author,
+        tall2.publishingname,
+        tall2.publishingtime,
+        tall1.borrow
+        from (select t.title,
+        count(decode(t.op_type_id, '0', 1, null)) borrow
+        from fact_circulate t, dim_org org
+        where t.org_id = org.id(+)
+
+        <if test="schoolCode!=null and schoolCode!=''">
+            and org.school_code = #{schoolCode}
+        </if>
+        <if test="title!=null and title!=''">
+            and tall1.title =#{title}
+        </if>
+        <if test="author!=null and author!=''">
+            and tall2.author =#{author}
+        </if>
+        <if test="publishingName!=null and publishingName!=''">
+            and tall2.publishing_name =#{publishingName}
+        </if>
+        <if test="publishingTime!=null and publishingTime!=''">
+            and tall2.publishing_time =#{publishingTime}
+        </if>
+        group by t.title) tall1,
+        (select
+        t.title,
+        t.author,
+        t.publishing_name publishingName,
+        t.publishing_time publishingTime
+        from info_book_directory t
+        where 1=1
+        <if test="schoolCode!=null and schoolCode!=''">
+            and t.org_id = #{schoolCode}
+        </if>
+        ) tall2
+        where tall1.title = tall2.title(+)
+        order by tall1.borrow desc
+    </select>
+
+    <select id="borrowingStatistics" resultType="Statements">
+        select tall1.card,
+        tall1.name,
+        tall1.readerType,
+        tall1.groupName,
+        tall2.borrow,
+        tall2.renew,
+        tall2.subscribe,
+        tall2.orderBorrow,
+        case when tall3.overdue is null then 0 else tall3.overdue end as overdue
+        from (select distinct  t.reader_id readerId,
+        tall1.card,
+        tall1.groupName,
+        t.name,
+        t.reader_type readerType
+        from fact_circulate t, dim_org org
+        where t.org_id = org.id(+)
+        <if test="schoolCode!=null and schoolCode!=''">
+            and org.school_code = #{schoolCode}
+        </if>
+
+        <if test="readerType!=null and readerType!=''">
+        and t.reader_type = #{readerType}
+        </if>
+        <if test="name!=null and name!=''">
+         and t.name like '%#{name}%'
+        </if>
+        <!--<if test="dateId!=null and dateId!=''">-->
+         <!--and t.date_id =#{dateId} in (select d.id from dim_date d where d.c_date<=to_date('2016-09-09','yyyy-MM-dd'))-->
+        <!--</if>if-->
+        ) tall1,
+        (select t.reader_id readerId,
+        count(decode(t.op_type_id, '0', 1, null)) borrow,
+        count(decode(t.op_type_id, '7', 1, null)) renew,
+        count(decode(t.op_type_id, '5', 1, null)) subscribe,
+        count(decode(t.op_type_id, '6', 1, null)) orderBorrow
+        from fact_circulate t, dim_org org
+        where t.org_id = org.id(+)
+        <if test="schoolCode!=null and schoolCode!=''">
+            and org.school_code = #{schoolCode}
+        </if>
+
+        <if test="readerType!=null and readerType!=''">
+            and t.reader_type = #{readerType}
+        </if>
+        <if test="name!=null and name!=''">
+            and t.name like '%#{name}%'
+        </if>
+
+
+        group by t.reader_id) tall2,
+        (select t.reader_id readerId, count(1) overdue
+
+        from FACT_CIRCULATE_BILL t, dim_org org
+        where t.org_id = org.id(+)
+        <if test="schoolCode!=null and schoolCode!=''">
+            and org.school_code = #{schoolCode}
+        </if>
+        and t.if_overdue = '1'
+
+        <if test="readerType!=null and readerType!=''">
+            and t.reader_type = #{readerType}
+        </if>
+        <if test="name!=null and name!=''">
+            and t.name like '%#{name}%'
+        </if>
+
+
+
+        group by t.reader_id) tall3
+        where tall1.readerId = tall2.readerId(+)
+        and tall1.readerId = tall3.readerId(+)
+    </select>
+</mapper>

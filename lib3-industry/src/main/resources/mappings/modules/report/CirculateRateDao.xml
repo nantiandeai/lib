@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.report.dao.CirculateRateDao">
+    <select id="findAllCirculateRate" resultType="CirculateRate">
+        select c.small_classes_code classCode,--其实台下的观众就我一个
+        c.small_classes_name className,
+        count(t.copy_num) bookNum,
+        count(distinct t.assortnum) bookSpecies,
+        count(a.bar_code) borrowNum
+        from dim_book_category c
+        left join fact_book_directory t on (
+        c.small_classes_code= substr(t.assortnum,1,1))
+          left join FACT_CIRCULATE a on (t.book_directory_id =
+                                        a.book_directory_id and
+                                        trim(a.op_type_id) = '0' )
+             where 1 = 1
+    <if test="startDate != null and startDate != ''">
+        <![CDATA[
+        and t.date_id in(select t.id from dim_date t
+            where
+        t.c_date >= to_date(#{startDate}||' 00:00:00','yyyy-MM-dd hh24.mi.ss'))
+        ]]>
+    </if>
+    <if test="endDate != null and endDate != ''">
+        <![CDATA[     and  a.date_id in(select t.id from dim_date t
+                  where
+                   t.c_date <= to_date(#{endDate}||' 23:59:59','yyyy-MM-dd hh24.mi.ss'))
+        ]]>
+    </if>
+             group by c.small_classes_code, c.small_classes_name
+    </select>
+</mapper>

@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.lianyitech.modules.analysis.dao.InputAnalysisDao">
+
+    <sql id="analysis_where">
+        <!--条件区域开始-->
+        <if test="province!=null and province!=''"><!--省条件-->
+            AND org.PROVINCE_CODE = #{province}
+        </if>
+        <if test="city!=null and city!=''"><!--市条件-->
+            AND org.CITY_CODE = #{city}
+        </if>
+        <if test="county!=null and county!=''"><!--县条件-->
+            AND org.COUNTY_CODE = #{county}
+        </if>
+        <if test="schoolArea!=null and schoolArea!=''"><!--学区条件-->
+            AND org.school_area_code = #{schoolArea}
+        </if>
+        <if test="unitName !=null and unitName != ''"><!--学校名称过滤条件-->
+            and org.unit_name like '%'||#{unitName}||'%'
+        </if>
+    </sql>
+
+    <sql id="analysis_dimension">
+        <choose>
+            <when test="schoolArea !=null and county !=''"><!--学区-->
+                org.school_area_code unitCode,
+                org.school_area_name unitName,
+                '3' orgType,
+                #{province} province,
+                #{city} city,
+                #{county} county,
+                #{schoolArea} schoolArea,
+            </when>
+            <when test="county !=null and county !=''"><!--县-->
+                org.COUNTY_CODE unitCode,
+                org.COUNTY_NAME unitName,
+                '2' orgType,
+                #{province} province,
+                #{city} city,
+                #{county} county,
+                #{schoolArea} schoolArea,
+            </when>
+            <when test="city !=null and city !=''"><!--市-->
+                org.COUNTY_CODE unitCode,
+                org.COUNTY_NAME unitName,
+                '2' orgType,
+                #{province} province,
+                #{city} city,
+                #{county} county,
+                #{schoolArea} schoolArea,
+            </when>
+            <when test="province !=null and province !=''"><!--省-->
+                org.CITY_CODE unitCode,
+                org.CITY_NAME unitName,
+                '1' orgType,
+                #{province} province,
+                #{city} city,
+                #{county} county,
+                #{schoolArea} schoolArea,
+            </when>
+            <otherwise><!--否则直接按照省分组-->
+                org.PROVINCE_CODE unitCode,
+                org.PROVINCE_NAME unitName,
+                '0' orgType,
+            </otherwise>
+        </choose>
+    </sql>
+
+    <sql id="analysis_dimension_group">
+        GROUP BY
+        <choose>
+            <when test="schoolArea !=null and county !=''"><!--学区-->
+                org.school_area_code,
+                org.school_area_name
+            </when>
+            <when test="county !=null and county !=''"><!--县-->
+                org.COUNTY_CODE,
+                org.COUNTY_NAME
+            </when>
+            <when test="city !=null and city !=''"><!--市-->
+                org.COUNTY_CODE,
+                org.COUNTY_NAME
+            </when>
+            <when test="province !=null and province !=''"><!--省-->
+                org.CITY_CODE,
+                org.CITY_NAME
+            </when>
+            <otherwise><!--否则直接按照省分组-->
+                org.PROVINCE_CODE,
+                org.PROVINCE_NAME
+            </otherwise>
+        </choose>
+    </sql>
+
+    <!--有流通记录的学校list-->
+    <select id="listCirculateAnalysis" resultType="InputAnalysis">
+        select
+            <include refid="analysis_dimension"/>
+            count(1) registerCount,
+            count(decode(cinfo.yes_no_input, 'no', 'no')) noInput,
+            count(decode(cinfo.yes_no_input, 'yes', 'yes')) yesInput
+        from dim_org org
+        left join (
+            select org_id, decode(c_count, 0, 'no', 'yes') yes_no_input
+            from (
+                select org.id org_id, count(c.bar_code) c_count
+                from dim_org org
+                left join fact_circulate c on c.org_id = org.id
+                group by org.id
+            )
+        ) cinfo on org.id = cinfo.org_id
+        where
+            <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+            <include refid="analysis_where"/>
+            <!--机构有效日期条件-->
+            <include refid="com.lianyitech.modules.report.dao.BookCirculteDao.org_date_where"/>
+            <include refid="analysis_dimension_group"/>
+    </select>
+
+    <!--有录入读者信息的学校list-->
+    <select id="listReaderAnalysis" resultType="InputAnalysis">
+        select
+        <include refid="analysis_dimension"/>
+            count(1) registerCount,
+            count(decode(cinfo.yes_no_input, 'no', 'no')) noInput,
+            count(decode(cinfo.yes_no_input, 'yes', 'yes')) yesInput
+        from dim_org org
+        left join (
+            select org_id, decode(c_count, 0, 'no', 'yes') yes_no_input
+            from (
+                select org.id org_id, count(r.o_reader_id) c_count
+                from dim_org org
+                left join dim_reader r on r.org_id = org.id
+                group by org.id
+            )
+        ) cinfo on org.id = cinfo.org_id
+        where
+            <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+            <include refid="analysis_where"/>
+            <!--机构有效日期条件-->
+            <include refid="com.lianyitech.modules.report.dao.BookCirculteDao.org_date_where"/>
+            <include refid="analysis_dimension_group"/>
+    </select>
+
+
+    <!--有流通记录的学校list-->
+    <select id="listCopyAnalysis" resultType="InputAnalysis">
+        select
+            <include refid="analysis_dimension"/>
+            count(1) registerCount,
+            count(decode(cinfo.yes_no_input, 'no', 'no')) noInput,
+            count(decode(cinfo.yes_no_input, 'yes', 'yes')) yesInput
+        from dim_org org
+        inner join (
+            select org_id, decode(c_count, 0, 'no', 'yes') yes_no_input
+            from (
+                select org.id org_id, sum(nvl(c.copys,0)) c_count
+                from dim_org org
+                left join mv_fact_copy_assort c on c.org_id = org.id
+                where
+                    <include refid="com.lianyitech.modules.report.dao.BookReportDao.org_type_where"/>
+                    <include refid="analysis_where"/>
+                group by org.id
+            )
+        ) cinfo on org.id = cinfo.org_id
+        where 1=1
+            <!--机构有效日期条件-->
+            <include refid="com.lianyitech.modules.report.dao.BookCirculteDao.org_date_where"/>
+            <include refid="analysis_dimension_group"/>
+    </select>
+</mapper>
